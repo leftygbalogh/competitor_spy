@@ -450,3 +450,108 @@ Note: Idle-triggered behavior requires host/editor automation to enforce consist
 - Open questions: In-scope goals approval, out-of-scope items, stakeholders, key risks and assumptions.
 - Blockers: None.
 - Next step: Confirm in-scope goals list, then move to out-of-scope items.
+
+## 2026-03-19 Status Snapshot 040
+
+- Timestamp: 2026-03-19
+- Current stage: Project bootstrap execution — Stage 1 Discover Q&A in progress.
+- Completed since last update: Committed governance updates and captured question clarifying purpose of out-of-scope definition.
+- In progress: Clarifying how out-of-scope list is used as a decision boundary during delivery.
+- Decisions made: None new.
+- Open questions: In-scope goals approval, out-of-scope items, stakeholders, key risks and assumptions.
+- Blockers: None.
+- Next step: Explain out-of-scope usage and finalize out-of-scope list.
+
+## 2026-03-19 Status Snapshot 041
+
+- Timestamp: 2026-03-19
+- Current stage: Project bootstrap execution — Stage 1 Discover Q&A in progress.
+- Completed since last update: Clarified purpose of out-of-scope list as a decision boundary and anti-scope-creep control. User accepted the draft and asked to continue.
+- In progress: Stage 1 Discover Q&A moving from out-of-scope to stakeholder identification.
+- Decisions made: Out-of-scope list retained as project-boundary filter for planning and implementation decisions.
+- Open questions: Stakeholders, key risks and assumptions.
+- Blockers: None.
+- Next step: Capture stakeholders and audience.
+
+## 2026-03-19 Status Snapshot 042
+
+- Timestamp: 2026-03-19
+- Current stage: Stage 1 Discover Q&A in progress.
+- Completed since last update: Stakeholder identification captured and confirmed.
+  - Sponsor / decision owner: Lefty (sole approver of governance changes)
+  - Primary day-to-day users: entire development team (refer to full template or sections per scope of work)
+  - Secondary users: out of scope for this project
+  - Change governance: any participant may suggest changes; Lefty is the only approver
+- In progress: Moving to key risks and assumptions question.
+- Decisions made: Structured change-request model — open suggestion channel, single approver gate.
+- Open questions: Key risks and assumptions, Greenfield domain boundaries.
+- Blockers: None.
+- Next step: Ask key risks and assumptions question.
+
+## 2026-03-19 Status Snapshot 043
+
+- Timestamp: 2026-03-19
+- Current stage: Stage 1 Discover Q&A in progress.
+- Completed since last update: Captured additional Brownfield risk: incomplete legacy understanding due to weak docs, low endpoint test coverage, and hidden prerequisites/setup complexity that can block reliable delivery.
+- In progress: Producing Brownfield handling strategy and integrating this risk into Stage 1 assumptions/risk set.
+- Decisions made: Brownfield legacy-understanding risk will be treated as a first-class planning risk with explicit discovery/testing mitigation before feature commitments.
+- Open questions: Remaining Stage 1 Discover items include any additional risks/assumptions and Greenfield domain boundaries/evolution paths.
+- Blockers: None.
+- Next step: Provide concrete mitigation playbook and request confirmation to fold it into project brief draft.
+
+## 2026-03-19 Status Snapshot 044
+
+- Timestamp: 2026-03-19
+- Current stage: Stage 1 Discover Q&A in progress.
+- Completed since last update: Implemented reusable Brownfield legacy-uncertainty governance pattern in core templates and stage gates.
+  - Project brief template now includes required Brownfield uncertainty handling protocol fields.
+  - Workflow stages now enforce Brownfield legacy-evidence readiness at task start and Stage 1 completion.
+- In progress: Continue Stage 1 Q&A toward final brief draft.
+- Decisions made: Brownfield feature commitments are now explicitly gated by confidence thresholds and discovery outputs.
+- Open questions: Additional risks/assumptions (if any) and Greenfield domain boundaries/evolution paths.
+- Blockers: None.
+- Next step: Capture remaining Stage 1 answers and draft project brief for approval.
+
+## 2026-03-19 Status Snapshot 045
+
+- Timestamp: 2026-03-19
+- Current stage: Stage 1 Discover Q&A in progress.
+- Completed since last update: User requested simpler wording for Greenfield domain-boundary question.
+- In progress: Reframing question in plain language to complete final Stage 1 input.
+- Decisions made: Use plain operational phrasing instead of abstract architecture language.
+- Open questions: Greenfield boundaries and first growth areas.
+- Blockers: None.
+- Next step: Ask simplified boundary-and-growth question and capture answer.
+
+## 2026-03-19 Status Snapshot 046
+
+- Timestamp: 2026-03-19
+- Current stage: Stage 1 Discover Q&A in progress.
+- Completed since last update: User asked for enumerated alternatives for scope sequencing (start now, add later, leave out).
+- In progress: Providing practical option sets to accelerate selection.
+- Decisions made: None new yet.
+- Open questions: Which option set Lefty selects for start/later/leave-out.
+- Blockers: None.
+- Next step: Present concise alternatives and request selection.
+
+## 2026-03-19 Status Snapshot 047
+
+- Timestamp: 2026-03-19
+- Current stage: Stage 1 Discover drafting completed, pending explicit approval.
+- Completed since last update: User selected recommended scope sequencing (start-now core set, add-later layers, leave-out list). Draft project brief created at repo root with all approved Stage 1 inputs.
+- In progress: Stage 1 gate review and explicit approval request.
+- Decisions made: Scope sequencing fixed for v1 (now/later/leave-out) and integrated into draft brief.
+- Open questions: Stage 1 approval yes/no.
+- Blockers: None.
+- Next step: Get explicit Stage 1 approval, then begin Stage 2 formal specification draft.
+
+## 2026-03-19 Status Snapshot 048
+
+- Timestamp: 2026-03-19
+- Current stage: Stage 1 Discover approved; preparing Stage 2 Specify.
+- Completed since last update: User explicitly approved Stage 1. Project brief approval fields updated with approver and date.
+- In progress: Saving and committing stage-completion artifacts.
+- Decisions made: Proceed to Stage 2 only after stage-completion commit is recorded.
+- Open questions: Whether to codify a strict "commit at each completed stage" rule in governance docs.
+- Blockers: None.
+- Next step: Create commit and confirm whether stage-completion commit is currently a documented mandatory rule.

@@ -78,6 +78,22 @@ List each requirement with stable identifiers.
 - Unknown 1:
 - Unknown 2:
 
+## 8.1 Brownfield Legacy Uncertainty Handling (Required if mode is Brownfield)
+
+- Discovery timebox (days or sprint fraction):
+- Legacy surface map in scope (modules/endpoints/jobs):
+- Evidence sources used (code, runtime traces, logs, existing tests, SMEs):
+- Hidden prerequisites and setup checklist captured? Yes | No
+- Characterization test baseline planned? Yes | No
+  - High-risk paths to lock first:
+- Confidence rating by area: High | Medium | Low
+- Delivery gate for feature commitments:
+  - Go only if minimum confidence threshold is met and parity-risk controls are defined
+  - If threshold is not met, choose one: extend discovery | reduce scope | run stabilization sprint
+- Ambiguity escalation path:
+  - Cross-role clarification attempted first? Yes | No
+  - If unresolved, final decision owner:
+
 ## 9. Stage Approval
 
 - Approved by:

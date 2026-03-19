@@ -202,6 +202,8 @@ Definition of done:
 - Non-functional expectations validated against targets defined in Stage 2
 - Maintainability seams confirmed (change seams defined at Stage 2 exist and function)
 - Reliability failure paths exercised
+- Traceability matrix audited; missing links listed as blockers until resolved
+- Maintainability trend metric captured for this cycle (template modification count and direction)
 
 Mode-specific done criteria:
 

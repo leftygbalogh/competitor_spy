@@ -367,3 +367,163 @@ Plain-language purpose:
 - Review date: 2026-03-19
 - Notes:
   - Linked to task T-004 and requirement FR-004.
+
+---
+
+## Chronicle Entry: CHR-GOV-BROWNFIELD-GATE
+
+### 1. Chronicle Metadata
+
+- Chronicle ID: CHR-GOV-BROWNFIELD-GATE
+- Source task ID: T-005
+- Source spec sections: FORMAL_SPEC.md section 4 (FR-005)
+- Source requirements: FR-005
+- Module / component name: Brownfield confidence gate template
+- Implementation language: Markdown policy artifacts
+- Author: GitHub Copilot
+- Date: 2026-03-19
+- Status: Final
+
+### 2. Intent to Implementation Mapping
+
+- What this unit implements from the behavioral spec:
+  - Explicit Brownfield commitment gate using baseline evidence + confidence rating.
+- What must remain functionally equivalent across languages:
+  - Brownfield commitments blocked when evidence is missing or confidence is low.
+- What is intentionally language-specific in this implementation:
+  - Decision gate represented in markdown decision table.
+
+### 3. Implementation Decisions
+
+- Data structures chosen and why:
+  - Not applicable for document-only governance change. TODO for coding projects.
+- Algorithms chosen and why:
+  - Not applicable for document-only governance change. TODO for greenfield coding projects.
+- Control-flow structure chosen and why:
+  - Added compact decision table to FR-005 for unambiguous outcome mapping.
+- Error-handling strategy:
+  - Missing baseline evidence and low-confidence paths explicitly block feature commitment.
+
+### 4. Alternatives Considered
+
+- Alternative 1: Keep brownfield gate as prose only.
+- Why rejected:
+  - Decision-table form is less ambiguous under pressure.
+
+### 5. Derived Invariants and Constraints
+
+- Invariant 1:
+  - Brownfield commitment cannot proceed without baseline evidence.
+- Invariant 2:
+  - Low confidence requires one of the predefined fallback actions.
+
+### 6. Divergences and Clarifications
+
+- Where the spec was ambiguous:
+  - FR-005 outcomes were clear, but condition/result mapping was not tabulated.
+- How the ambiguity was resolved in code:
+  - Added explicit decision table to FR-005.
+
+### 7. Testing Notes
+
+- Unit tests added:
+  - Not executable; validated decision-table completeness.
+
+### 8. Reconstruction Notes
+
+- If the code were lost, what another implementer must know to rebuild this unit faithfully:
+  - Restore decision table with three condition bands: evidence complete + confidence level, plus blocked path for missing evidence.
+
+### 9. Known Limitations
+
+- Limitation 1:
+  - Confidence scoring remains process-guided, not automatically measured.
+- Revisit trigger:
+  - Add measurable confidence rubric in later automation/analytics layers.
+
+### 10. Approval / Review
+
+- Reviewed by: Lefty
+- Review date: 2026-03-19
+- Notes:
+  - Linked to task T-005 and requirement FR-005.
+
+---
+
+## Chronicle Entry: CHR-GOV-AUDIT
+
+### 1. Chronicle Metadata
+
+- Chronicle ID: CHR-GOV-AUDIT
+- Source task ID: T-006
+- Source spec sections: FORMAL_SPEC.md section 5 (NFR-002, NFR-003)
+- Source requirements: NFR-002, NFR-003, NFR-004
+- Module / component name: Traceability and maintainability audit flow
+- Implementation language: Markdown policy artifacts
+- Author: GitHub Copilot
+- Date: 2026-03-19
+- Status: Final
+
+### 2. Intent to Implementation Mapping
+
+- What this unit implements from the behavioral spec:
+  - Operational auditability for traceability completeness and maintainability trend capture.
+- What must remain functionally equivalent across languages:
+  - Missing links are blockers; trend metric captured every cycle.
+- What is intentionally language-specific in this implementation:
+  - Audit requirements represented in Verify-stage done criteria and NFR validation text.
+
+### 3. Implementation Decisions
+
+- Data structures chosen and why:
+  - Not applicable for document-only governance change. TODO for coding projects.
+- Algorithms chosen and why:
+  - Not applicable for document-only governance change. TODO for greenfield coding projects.
+- Control-flow structure chosen and why:
+  - Added explicit Verify-stage checks to force audits before stage closure.
+- Boundary and interface decisions:
+  - NFR validation methods define metrics; Stage 5 defines when they are captured.
+
+### 4. Alternatives Considered
+
+- Alternative 1: Keep traceability and trend capture as optional reviewer guidance.
+- Why rejected:
+  - Optional checks are skipped under schedule pressure.
+
+### 5. Derived Invariants and Constraints
+
+- Invariant 1:
+  - Stage cannot close with unresolved traceability gaps.
+- Invariant 2:
+  - Maintainability trend metric must be captured each cycle.
+
+### 6. Divergences and Clarifications
+
+- Where the spec was ambiguous:
+  - NFR validation existed but stage-level operational enforcement was implicit.
+- How the ambiguity was resolved in code:
+  - Added explicit Verify-stage done bullets and clarified NFR validation methods.
+
+### 7. Testing Notes
+
+- Unit tests added:
+  - Not executable; validated consistency between NFR mapping and stage done criteria.
+
+### 8. Reconstruction Notes
+
+- If the code were lost, what another implementer must know to rebuild this unit faithfully:
+  - Re-add mandatory traceability blocker check and maintainability trend capture in Verify stage.
+
+### 9. Known Limitations
+
+- Limitation 1:
+  - Audit is still manual, not enforced by automated linter.
+- Revisit trigger:
+  - Add automated traceability checker in automation layer.
+
+### 10. Approval / Review
+
+- Reviewed by: Lefty
+- Review date: 2026-03-19
+- Notes:
+  - Linked to task T-006 and requirements NFR-002/NFR-003/NFR-004.

@@ -132,8 +132,12 @@
 - DoR met? Yes
 - Definition of done: inherits universal DoD from `02_WORKFLOW_STAGES.md`; add task-specific additions here:
   - Include one Brownfield decision-table example.
-- Status: Not started
+- Status: Done
 - Progress notes:
+  - FR-005 now includes explicit Brownfield confidence gate decision table.
+  - Decision outcomes now explicitly block commitments when baseline evidence is missing or confidence is low.
+  - Greenfield mode non-activation requirement preserved.
+  - Chronicle entry recorded: CHR-GOV-BROWNFIELD-GATE in `IMPLEMENTATION_CHRONICLE.md`.
 
 6. T-006: Validate traceability and maintainability metrics flow
 - Description: Ensure requirements -> tests -> chronicle mapping and trend metric capture are operational.
@@ -149,8 +153,14 @@
 - DoR met? Yes
 - Definition of done: inherits universal DoD from `02_WORKFLOW_STAGES.md`; add task-specific additions here:
   - Include one complete traceability row walkthrough example.
-- Status: Not started
+- Status: Done
 - Progress notes:
+  - Verify stage now requires traceability matrix audit with blockers for missing links.
+  - Verify stage now requires maintainability trend metric capture each cycle.
+  - NFR-002 and NFR-003 validation methods updated for operational auditability.
+  - Traceability row walkthrough example:
+    - FR-003 -> Spec section 4 (FR-003) -> Planned tests: status transition checks -> Chronicle: CHR-GOV-TASK-DISCIPLINE.
+  - Chronicle entry recorded: CHR-GOV-AUDIT in `IMPLEMENTATION_CHRONICLE.md`.
 
 ## 4. XP and DDD Checks
 

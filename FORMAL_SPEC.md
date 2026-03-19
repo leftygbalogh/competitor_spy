@@ -194,6 +194,14 @@ Example startup transcript (Brownfield):
 - Error handling:
   - If confidence threshold not met: extend discovery, reduce scope, or stabilization sprint
 
+Brownfield confidence gate decision table:
+
+| Baseline evidence complete? | Confidence rating | Result |
+| --- | --- | --- |
+| Yes | High/Medium | Proceed with feature commitment under parity controls |
+| Yes | Low | Do not commit feature delivery yet; choose extend discovery/reduce scope/stabilization sprint |
+| No | Any | Block commitment; capture missing evidence checklist |
+
 ## 5. Non-Functional Requirements Mapping
 
 - NFR-001
@@ -205,12 +213,12 @@ Example startup transcript (Brownfield):
   - Dimension: Maintainability Over Time
   - Metric: master-template modifications per new project
   - Target: downward trend over successive projects
-  - Validation method: compare modification counts across projects
+  - Validation method: compare modification counts across projects and record trend in stage review notes
 - NFR-003
   - Dimension: Reliability & Resilience
   - Metric: missing-traceability defects at stage review
   - Target: 0 critical traceability gaps at stage closure
-  - Validation method: traceability matrix audit
+  - Validation method: traceability matrix audit with blocker report for missing links
 - NFR-004
   - Dimension: Developer Experience
   - Metric: time to start guided discovery in a new project

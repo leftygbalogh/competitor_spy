@@ -58,6 +58,7 @@ For projects initialized from this template:
 - Treat this template as the master governance source; project-local improvements should be fed back here when approved.
 - Use simple manual versioning and short changelog updates for the master template.
 - Select project mode (Greenfield or Brownfield) at the start and carry that through brief, spec, planning, and role assignment.
+- Ask project mode as the first discovery question before asking any project-domain requirement details.
 - Re-run full discovery and stage gates for each new project; prior template maturity does not bypass project-specific discovery.
 - Create and approve project brief before formal specification.
 - Create and approve formal specification before task planning.

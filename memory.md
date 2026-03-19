@@ -687,3 +687,25 @@ Note: Idle-triggered behavior requires host/editor automation to enforce consist
 - Open questions: None.
 - Blockers: None.
 - Next step: Commit update and proceed to next item in Build.
+
+## 2026-03-19 Status Snapshot 061
+
+- Timestamp: 2026-03-19
+- Current stage: Stage 4 Build ready to start.
+- Completed since last update: Explicit working-governance-directory rule committed.
+- In progress: Confirming next execution step.
+- Decisions made: None new.
+- Open questions: None.
+- Blockers: None.
+- Next step: Start Build with T-001 from the approved task list.
+
+## 2026-03-19 Status Snapshot 062
+
+- Timestamp: 2026-03-19
+- Current stage: Stage 4 Build in progress.
+- Completed since last update: Completed T-001 (mode-first startup flow). Added explicit mode-first wording to workflow/bootstrap docs, added Greenfield/Brownfield startup transcript examples, and wrote chronicle entry CHR-GOV-STARTUP.
+- In progress: Saving and committing T-001 milestone.
+- Decisions made: Startup discovery now consistently requires mode question before domain questions.
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit T-001 and move to T-002 (stage transition gate checks).

@@ -41,8 +41,11 @@
 - DoR met? Yes
 - Definition of done: inherits universal DoD from `02_WORKFLOW_STAGES.md`; add task-specific additions here:
   - Include one example startup transcript for Greenfield and one for Brownfield.
-- Status: Not started
+- Status: Done
 - Progress notes:
+  - Mode-first question order enforced in startup/governance docs.
+  - FR-001 now includes Greenfield and Brownfield startup transcript examples.
+  - Chronicle entry recorded: CHR-GOV-STARTUP in `IMPLEMENTATION_CHRONICLE.md`.
 
 2. T-002: Enforce stage transition gate checks
 - Description: Enforce explicit approval and stage-completion commit requirement before any next-stage work.

@@ -8,6 +8,7 @@ Select one mode at project start and record it in project artifacts:
 - Brownfield: Existing system preservation, refactor, migration, or rewrite.
 
 Mode selection changes priorities, role emphasis, and validation strategy.
+Mode selection must be the first discovery question before any domain-specific requirements questions.
 
 ## Implementation Language Selection
 

@@ -127,6 +127,16 @@ Example:
   - If required governance file missing, agent lists what is missing and stops before asking any project questions
   - If mode answer is ambiguous, agent asks one clarifying question before proceeding
 
+Example startup transcript (Greenfield):
+- Agent: "I have read the governance files. First question: are we building a new project from scratch or working on an existing codebase?"
+- User: "New project from scratch."
+- Agent: "Recorded: Greenfield mode. Next: what is the project name and one-sentence problem statement?"
+
+Example startup transcript (Brownfield):
+- Agent: "I have read the governance files. First question: are we building a new project from scratch or working on an existing codebase?"
+- User: "Existing codebase; refactor."
+- Agent: "Recorded: Brownfield mode. Next: what baseline behavior must remain unchanged and where is runtime evidence available?"
+
 ### FR-002 Stage approval behavior
 - Preconditions:
   - Current stage done criteria satisfied

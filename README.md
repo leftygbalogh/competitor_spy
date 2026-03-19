@@ -47,6 +47,7 @@ Read and apply files in this order:
 2. Rename it to project-specific governance folder name.
 3. Initialize git if not already initialized.
 4. Complete Q&A customization in this order:
+  - First question: determine project mode (Greenfield or Brownfield) before any domain-specific questions
    - Project brief
    - Formal specification
    - Task list

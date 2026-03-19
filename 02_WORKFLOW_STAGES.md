@@ -23,6 +23,9 @@ A task may not be started until all of the following are true. Any role may bloc
 6. Dependencies resolved, or explicitly deferred with a written note explaining why deferral is safe.
 7. No unresolved ambiguity that would require a stop mid-implementation. If ambiguity exists, resolve it first.
 
+For Brownfield tasks, add:
+8. Legacy behavior evidence identified for touched areas (code/runtime traces/tests) and minimum local setup prerequisites verified.
+
 ---
 
 ## Universal Definition of Done (DoD) — Task Level
@@ -70,6 +73,7 @@ Mode-specific done criteria:
 
 - Greenfield: target domain model and likely evolution paths documented.
 - Brownfield: implemented current behavior baseline captured from code and runtime evidence, not documentation alone.
+- Brownfield: legacy uncertainty handling protocol completed in the project brief (discovery timebox, legacy surface map, hidden prerequisites checklist, characterization-test baseline plan, confidence rating, and go/no-go gate for feature commitments).
 
 Quality pack activation:
 

@@ -174,11 +174,12 @@ Example startup transcript (Brownfield):
   - Agent detects conflicting interpretations
 - Expected behavior:
   - Agent consults remit-holder peer first
-  - Escalate to Lefty only if unresolved
+  - Escalate to Lefty only if unresolved, with unresolved-ambiguity note
 - Postconditions:
-  - Clarification trail documented
+  - Clarification trail documented in task notes and memory when escalated
 - Error handling:
   - Premature escalation is treated as process violation and corrected
+  - Escalation without unresolved-ambiguity note is denied and returned for completion
 
 ### FR-005 Brownfield safety behavior
 - Preconditions:

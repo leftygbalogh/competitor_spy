@@ -56,3 +56,17 @@ Mode-specific handoff requirements:
 - If blocked by missing dependency, report exact dependency and impact.
 - If blocked by conflict in requirements, pause and request resolution.
 - If debate exceeds time-box without new evidence, escalate using the escalation output format in `06_COMMAND_CHAIN_AND_PERSONALITY.md`.
+
+## Clarification Routing Protocol
+
+When ambiguity appears, follow this route before escalating to the user:
+
+1. Identify remit-holder peer for the ambiguous area.
+2. Ask peer clarification question with concrete options.
+3. Record peer response in task progress notes.
+4. If unresolved, escalate with unresolved-ambiguity note including what was tried.
+
+Required artifact trail:
+
+- Task record must include clarification note or escalation note reference.
+- `memory.md` must include unresolved-ambiguity reason when escalation happens.

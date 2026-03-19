@@ -349,3 +349,9 @@ ok, can youopen it for me
 
 ### Prompt 076
 this entire document is approved lets move onto the next major step
+
+### Prompt 077
+please open up that section for me
+
+### Prompt 078
+looks good

@@ -104,8 +104,19 @@
 - DoR met? Yes
 - Definition of done: inherits universal DoD from `02_WORKFLOW_STAGES.md`; add task-specific additions here:
   - Include one sample clarification exchange and one escalation case.
-- Status: Not started
+- Status: Done
 - Progress notes:
+  - Added explicit clarification routing protocol in `03_TEAM_MODEL_HANDOFFS.md`.
+  - Added mandatory peer-first rule and unresolved-ambiguity note requirements in `06_COMMAND_CHAIN_AND_PERSONALITY.md`.
+  - Updated FR-004 to require unresolved-ambiguity note and documented artifact trail.
+  - Sample clarification exchange:
+    - Implementer -> remit-holder: "Should this requirement be interpreted as A or B?"
+    - Remit-holder: "Use A due to spec section 4 and risk constraint X."
+    - Task note: "Clarified with remit-holder; proceed with A."
+  - Sample escalation case:
+    - Peer consulted, conflicting evidence remains.
+    - Escalation note includes ambiguity, consulted peer, reviewed options, unresolved reason.
+  - Chronicle entry recorded: CHR-GOV-COLLAB in `IMPLEMENTATION_CHRONICLE.md`.
 
 5. T-005: Preserve brownfield confidence gate template
 - Description: Keep Brownfield uncertainty protocol ready for reuse and verify it blocks unsafe feature promises in Brownfield mode.

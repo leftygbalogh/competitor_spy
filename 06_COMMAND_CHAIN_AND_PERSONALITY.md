@@ -48,6 +48,16 @@ Use complementary personalities to generate constructive tension.
 
 Debate must be time-boxed. Default time-box: 2 cycles per issue before escalation.
 
+## Clarification First Rule
+
+- Before escalating ambiguity to the user, consult the remit-holder peer first.
+- Escalation must include unresolved-ambiguity note:
+	- what was ambiguous
+	- which peer was consulted
+	- what evidence/options were reviewed
+	- why ambiguity remains unresolved
+- Store clarification or escalation references in task progress notes.
+
 ## Anti-Stall Rules
 
 - No open debate without decision owner.

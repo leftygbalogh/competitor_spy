@@ -283,3 +283,87 @@ Plain-language purpose:
 - Review date: 2026-03-19
 - Notes:
   - Linked to task T-003 and requirement FR-003.
+
+---
+
+## Chronicle Entry: CHR-GOV-COLLAB
+
+### 1. Chronicle Metadata
+
+- Chronicle ID: CHR-GOV-COLLAB
+- Source task ID: T-004
+- Source spec sections: FORMAL_SPEC.md section 4 (FR-004)
+- Source requirements: FR-004
+- Module / component name: Cross-agent clarification routing
+- Implementation language: Markdown policy artifacts
+- Author: GitHub Copilot
+- Date: 2026-03-19
+- Status: Final
+
+### 2. Intent to Implementation Mapping
+
+- What this unit implements from the behavioral spec:
+  - Peer-first clarification route with escalation only when unresolved.
+- What must remain functionally equivalent across languages:
+  - Clarification then escalation sequence and unresolved-note requirement.
+- What is intentionally language-specific in this implementation:
+  - Enforced via governance process text and task-note conventions.
+
+### 3. Implementation Decisions
+
+- Data structures chosen and why:
+  - Not applicable for document-only governance change. TODO for coding projects.
+- Algorithms chosen and why:
+  - Not applicable for document-only governance change. TODO for greenfield coding projects.
+- Control-flow structure chosen and why:
+  - Added 4-step clarification routing protocol in handoff rules.
+- Boundary and interface decisions:
+  - Handoff contract defines route; command-chain file defines escalation payload; spec defines behavioral contract.
+- Error-handling strategy:
+  - Escalation without unresolved-ambiguity note is denied and returned for completion.
+
+### 4. Alternatives Considered
+
+- Alternative 1: Allow direct escalation without peer-first consultation.
+- Why rejected:
+  - Increases sponsor bottlenecks and reduces use of remit expertise.
+
+### 5. Derived Invariants and Constraints
+
+- Invariant 1:
+  - Ambiguity must be routed to remit-holder peer before user escalation.
+- Invariant 2:
+  - Escalation must include unresolved-ambiguity note with evidence summary.
+
+### 6. Divergences and Clarifications
+
+- Where the spec was ambiguous:
+  - FR-004 required peer-first behavior but did not fully define escalation payload fields.
+- How the ambiguity was resolved in code:
+  - Added unresolved-note payload requirements to command-chain and FR-004 error handling.
+
+### 7. Testing Notes
+
+- Unit tests added:
+  - Not executable; validated consistency across handoff, command-chain, and formal spec documents.
+- Integration tests added:
+  - Not executable; sample clarification and escalation records added in task progress notes.
+
+### 8. Reconstruction Notes
+
+- If the code were lost, what another implementer must know to rebuild this unit faithfully:
+  - Recreate peer-first route and unresolved-note fields in both workflow docs and spec behavior.
+
+### 9. Known Limitations
+
+- Limitation 1:
+  - No automated checker yet enforces presence of unresolved-ambiguity note fields.
+- Revisit trigger:
+  - Add policy lint checks in automation layer scope.
+
+### 10. Approval / Review
+
+- Reviewed by: Lefty
+- Review date: 2026-03-19
+- Notes:
+  - Linked to task T-004 and requirement FR-004.

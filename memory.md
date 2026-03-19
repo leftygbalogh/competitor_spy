@@ -555,3 +555,14 @@ Note: Idle-triggered behavior requires host/editor automation to enforce consist
 - Open questions: Whether to codify a strict "commit at each completed stage" rule in governance docs.
 - Blockers: None.
 - Next step: Create commit and confirm whether stage-completion commit is currently a documented mandatory rule.
+
+## 2026-03-19 Status Snapshot 049
+
+- Timestamp: 2026-03-19
+- Current stage: Stage 1 complete; governance policy hardening before Stage 2.
+- Completed since last update: Added explicit policy for frequent small commits and mandatory milestone commit at approved stage completion.
+- In progress: Saving and committing policy updates.
+- Decisions made: Stage transitions now require a stage-completion commit after approval and before next-stage work.
+- Open questions: None for this policy change.
+- Blockers: None.
+- Next step: Commit policy updates and proceed to Stage 2 Specify.

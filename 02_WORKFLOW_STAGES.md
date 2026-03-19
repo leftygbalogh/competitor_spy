@@ -211,3 +211,4 @@ Quality pack activation:
 - Explicit approval means an affirmative yes; silence is not approval.
 - Stage-level done requires all tasks in the stage to meet the universal task-level DoD.
 - Any role may raise a DoR or DoD violation; it must be resolved before work continues.
+- After stage completion is approved, save and create a stage-completion commit before any next-stage work begins.

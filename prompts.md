@@ -275,3 +275,6 @@ Complex dashboarding/reporting UI for governance
 
 ### Prompt 057
 yes I approve stage one, and as it is now complete, lets save and commit. Is this in our rules that once a stage it complate we always save and commit?
+
+### Prompt 058
+yes, please make it explicit. I had this issue in the past that our rollback points were not frequent enough, so overall, I'd prefer to have more smaller commits than less, and after each major milestone, definitely a clear - this is done kind of commit

@@ -30,6 +30,8 @@ Read and apply files in this order:
 
 - Clarify ambiguity through questions, one at a time, up to 12 questions per clarification cycle.
 - Do not proceed to the next stage until the current stage is complete and approved.
+- After each approved stage completion, save and create a clear stage-completion commit before starting next-stage work.
+- Prefer smaller, behavior-scoped commits to keep rollback points frequent.
 - Do not write code unless explicitly instructed to do so.
 - Record every user prompt in `prompts.md`.
 - Maintain `memory.md` with current status, decisions, blockers, and next step.

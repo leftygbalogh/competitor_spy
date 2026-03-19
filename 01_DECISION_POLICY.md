@@ -51,6 +51,13 @@ Request explicit approval before acting when any of the following applies:
 - No cross-stage work without approval.
 - Silence or lack of objection is not approval; next-stage work requires an explicit yes.
 
+## Commit Cadence Policy
+
+- Prefer small, behavior-scoped commits over large batches.
+- After a stage is marked complete and explicitly approved, save and create a stage-completion commit before starting the next stage.
+- If stage-completion work required several commits, end with one clear milestone commit that marks stage completion.
+- Keep rollback points frequent; do not delay commits until large bundles accumulate.
+
 ## Itemized Workflow Policy
 
 - When a user asks multiple questions, convert them to a short itemized task list.

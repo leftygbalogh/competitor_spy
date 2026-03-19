@@ -44,3 +44,4 @@ POLL_SECONDS=30 SAVE_AFTER_MINUTES=5 COMMIT_AFTER_MINUTES=15 ./scripts/idle-guar
 ## Important Note
 
 This automation tracks repository inactivity (file-change inactivity), which is a practical proxy for user idle time.
+It supplements, but does not replace, explicit stage-completion milestone commits.

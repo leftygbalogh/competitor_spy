@@ -151,6 +151,7 @@ Inputs:
 Definition of done:
 
 - Numbered task list with dependencies
+- T-000 folder structure task is the first task in every plan: establish the canonical project layout before any source files are created (see task list template for T-000 definition)
 - Work order and owners proposed
 - Task owners, tooling, and CI choices aligned to declared implementation language(s)
 - Test strategy per task defined

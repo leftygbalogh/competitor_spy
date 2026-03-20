@@ -32,6 +32,38 @@
 
 ## 3. Task Backlog
 
+### T-000: Establish Project Folder Structure (mandatory first task, every project)
+
+- Description: Create the canonical folder layout for the project before any source files, configs, tests, logs, or data files are committed. Use the industry-standard convention for the declared implementation language. If no widely-adopted convention exists for the language, use Rust project conventions as the default fallback.
+- Rust convention (default fallback):
+  - `src/` — all source files
+  - `tests/` — integration tests
+  - `benches/` — benchmarks (if applicable)
+  - `docs/` — project documentation
+  - `config/` — configuration files
+  - `data/` — static or seed data
+  - `logs/` — runtime log output (gitignored)
+  - `scripts/` — helper, diagnostic, and build scripts
+  - `assets/` — static assets (if applicable)
+- Common language overrides:
+  - Python: `src/<package>/`, `tests/`, `docs/`, `config/`, `data/`, `logs/`, `scripts/`
+  - Node/TypeScript: `src/`, `test/`, `docs/`, `config/`, `dist/` (gitignored), `logs/` (gitignored)
+  - Bash/shell: `bin/` or root-level script entry point, `lib/` for shared functions, `tests/`, `logs/`, `data/`, `docs/`
+- Acceptance criteria:
+  - All top-level directories created and committed with a `.gitkeep` or equivalent placeholder where empty
+  - `logs/` and build output dirs are added to `.gitignore`
+  - README or directory map updated to describe each folder's purpose
+  - No source files, configs, or data files exist outside this agreed structure
+- Source requirements: N/A (structural prerequisite for all other tasks)
+- Dependencies: none (must precede all other tasks)
+- Owner role: team lead or architect
+- Test-first notes (TDD): N/A — structural task; verify by visual inspection and CI path alignment
+- Planned implementation chronicle entry: record chosen convention and any project-specific deviations with rationale
+- DoR met? Yes (no prerequisites)
+- Status: Not started
+- Traceability links: —
+- Progress notes:
+
 1. T-001: [Title]
 - Description:
 - Source requirements:

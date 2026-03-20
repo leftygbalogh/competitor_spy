@@ -422,3 +422,9 @@ Next decision:
 Is there a way to indicate that now this repo is for a real software projet vs we are in the meta phase refining the template itself?
 
 yes
+
+### Prompt 096
+leave it out
+
+next issue:
+I created a metaprompter; but I need your help to refine its definition : I want it to be more engineering and precision focused and and give me the more verbose and precise answers and not provide two alternatives. Just one, well crafted rewrite with a list of open questions or gaps that we need to resolve to make the prompt perfect.

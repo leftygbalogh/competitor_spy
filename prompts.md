@@ -383,4 +383,10 @@ ok
 
 ### Prompt 087
 yes
+
+### Prompt 088
+go
+
+### Prompt 089
+yes
 yes i approve

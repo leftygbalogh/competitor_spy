@@ -67,3 +67,12 @@ Read and apply files in this order:
 ## Notes on Automation
 
 Idle-time actions (save/update/commit after inactivity) are policy requirements. They should be enforced with editor hooks or automation scripts in each project environment.
+
+## Release Readiness Artifacts
+
+- Release checklist: `RELEASE_CHECKLIST.md`
+- Operational notes and rollback: `OPERATIONS_AND_ROLLBACK.md`
+- Post-release monitoring plan: `POST_RELEASE_MONITORING.md`
+- Failure runbook: `RUNBOOK_KNOWN_FAILURES.md`
+- Getting-started guide: `GETTING_STARTED.md`
+- Changelog: `CHANGELOG.md`

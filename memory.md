@@ -890,3 +890,25 @@ Note: Idle-triggered behavior requires host/editor automation to enforce consist
 - Open questions: None.
 - Blockers: None.
 - Next step: Start Stage 6 Release checklist and request final release-stage approval when complete.
+
+## 2026-03-20 Status Snapshot 078
+
+- Timestamp: 2026-03-20
+- Current stage: Stage 6 Release checklist executed; awaiting approval.
+- Completed since last update: Created release checklist, operational rollback notes, monitoring plan, failure runbook, getting-started guide, and changelog; linked artifacts in README.
+- In progress: Requesting explicit Stage 6 approval.
+- Decisions made: Stage 6 done criteria are now mapped to explicit release artifacts.
+- Open questions: Does Lefty approve Stage 6 Release completion?
+- Blockers: None.
+- Next step: On explicit approval, record Stage 6 approval and create release-completion commit.
+
+## 2026-03-20 Status Snapshot 079
+
+- Timestamp: 2026-03-20
+- Current stage: Stage 6 Release approved and closed.
+- Completed since last update: User explicitly approved Stage 6 Release completion.
+- In progress: Creating release-completion commit.
+- Decisions made: Governance baseline now includes release-readiness artifact pack.
+- Open questions: None.
+- Blockers: None.
+- Next step: Finalize commit and confirm clean working tree.

@@ -93,6 +93,8 @@ Definition of done:
 - Scope boundaries documented
 - Intended implementation language(s) declared (primary required, secondary optional)
 - Q3 module triggers declared (data quality, compliance) or explicitly ruled out
+- Approval authority selection completed for Stage 2 through Stage 6 (owner-only or delegated approver per stage)
+- If delegation is enabled, exception list and prototype handback trigger are documented in the project brief
 
 Mode-specific done criteria:
 
@@ -113,6 +115,7 @@ Purpose: Convert requirements into a formal specification.
 Inputs:
 
 - Approved project brief
+- Approved approval-authority selection from project brief (who approves Stage 2 through Stage 6)
 
 Definition of done:
 

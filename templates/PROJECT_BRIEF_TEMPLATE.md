@@ -97,6 +97,38 @@ List each requirement with stable identifiers.
   - Cross-role clarification attempted first? Yes | No
   - If unresolved, final decision owner:
 
+## 8.2 Approval Authority and Delegation (Required before Stage 2 starts)
+
+Select who approves each stage once the brief is considered spec-ready.
+
+- Delegation mode: Owner only | Team lead for all stages | Team lead with exceptions
+- Delegated approver role (if delegated):
+- Delegation start stage:
+- Delegation end condition:
+
+Stage-by-stage approver selection:
+
+- Stage 2 Specify approved by:
+- Stage 3 Plan approved by:
+- Stage 4 Build approved by:
+- Stage 5 Verify approved by:
+- Stage 6 Release approved by:
+
+Owner-retained exceptions (must come back to owner even when delegated):
+
+- Scope change approvals:
+- Security/compliance-impacting decisions:
+- Dependency additions with legal or operational impact:
+- Release approval override rule:
+
+Prototype handback trigger (when delegated team lead must return control to owner):
+
+- Trigger condition:
+- Required handback package:
+  - Prototype demo status
+  - Known gaps and risks
+  - Recommendation (continue | rescope | stop)
+
 ## 9. Stage Approval
 
 - Approved by:

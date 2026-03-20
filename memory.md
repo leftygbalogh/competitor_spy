@@ -978,3 +978,14 @@ Note: Idle-triggered behavior requires host/editor automation to enforce consist
 - Open questions: None.
 - Blockers: None.
 - Next step: Commit and push refinements.
+
+## 2026-03-20 Status Snapshot 086
+
+- Timestamp: 2026-03-20
+- Current stage: Post-release template enhancement.
+- Completed since last update: Added explicit approval-authority Q&A step at brief-to-spec handoff and added stage-by-stage delegation fields in templates.
+- In progress: Committing and pushing delegation-process update.
+- Decisions made: Approval delegation is now selected before Stage 2 starts and traced from brief into spec/task artifacts.
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit and push approval delegation workflow changes.

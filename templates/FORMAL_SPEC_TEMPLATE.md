@@ -8,6 +8,7 @@
 - Declared implementation language(s) from brief:
 - Language-specific constraints captured in this spec:
 - Source brief:
+- Approval authority source (from brief section 8.2):
 - Status:
 - Author:
 - Reviewers:

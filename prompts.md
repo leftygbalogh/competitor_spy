@@ -428,3 +428,6 @@ leave it out
 
 next issue:
 I created a metaprompter; but I need your help to refine its definition : I want it to be more engineering and precision focused and and give me the more verbose and precise answers and not provide two alternatives. Just one, well crafted rewrite with a list of open questions or gaps that we need to resolve to make the prompt perfect.
+
+### Prompt 097
+Can we make it part of the question / answer process that after I give the agent the brief and we clarify that the brief can be turned into specs, it asks me who will approve the various bits and we select it then?

@@ -13,6 +13,7 @@
 - Version:
 - Project mode: Greenfield | Brownfield
 - Implementation language(s):
+- Stage approval authority reference (from brief section 8.2):
 - Owner:
 - Date:
 

@@ -26,6 +26,10 @@ Declare active Q3 modules at project start. Once declared, these become core exp
 - Compliance & Auditability module active? Yes | No
   - Trigger: project has regulatory scope (GDPR, HIPAA, SOC2, financial, healthcare, etc.)
   - If yes, specify applicable regulations:
+- Interactive CLI diagnostics required? Yes | No
+  - Trigger: project includes interactive terminal/CLI UX where manual exploratory sessions are part of verification
+  - If yes, define capture method: screen-state capture + application-state capture (scripted helper or equivalent)
+  - If yes, define storage location and naming convention for captured session artifacts:
 
 Note: Q1 core pack (Problem Understanding, Architecture, Code Quality, Testing, Security, Process & Workflow) is always active. Q2 stage-unlocked dimensions activate automatically at their named stages. See `07_QUALITY_DIMENSIONS.md`.
 

@@ -16,6 +16,7 @@ In-scope responsibilities:
 3. Flag fragile or low-signal tests.
 4. Convert escaped defects into permanent regression tests before closure.
 5. Reject helper-only test coverage for interactive or persistence-writing paths; orchestration flows require end-to-end test evidence.
+6. For interactive CLI projects, consume captured screen/application state artifacts from manual sessions and convert observed defects or edge behaviors into explicit regression tests.
 
 Out-of-scope boundaries:
 
@@ -51,12 +52,12 @@ Out-of-scope boundaries:
 ## 6. Handoff Protocol
 
 - Next role: Property-Based Test Engineer, reviewers.
-- Handoff package contents: coverage report, edge-case inventory, flake risks.
+- Handoff package contents: coverage report, edge-case inventory, flake risks, and mapping of captured manual-session artifacts to added regression tests.
 - Open questions: unclear expected behavior for exceptional inputs.
 - Risks and assumptions: under-specified failure semantics.
 
 ## 7. Done Criteria
 
 - Checks passed: required coverage thresholds met for scoped units and orchestration branches; escaped defects have regression tests and do not recur.
-- Artifacts updated: test strategy and traceability links.
+- Artifacts updated: test strategy, traceability links, and (if interactive CLI) manual capture artifact references.
 - Status recorded: progress logged in memory and task list.

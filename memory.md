@@ -989,3 +989,15 @@ Note: Idle-triggered behavior requires host/editor automation to enforce consist
 - Open questions: None.
 - Blockers: None.
 - Next step: Commit and push approval delegation workflow changes.
+
+## 2026-03-20 Status Snapshot 087
+
+- Timestamp: 2026-03-20
+- Current stage: Post-release template enhancement.
+- Completed since last update: Implemented CLI diagnostics capture requirements across workflow gates, quality dimensions, formal/project templates, and architect/CLI/tester personas.
+- In progress: Committing and pushing CLI diagnostics hardening update.
+- Decisions made: Interactive CLI projects now require screen-state and application-state capture methods and evidence links during verification and release.
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit and push CLI diagnostics governance updates.
+- Next step: Commit and push approval delegation workflow changes.

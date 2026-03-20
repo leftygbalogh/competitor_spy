@@ -32,6 +32,7 @@ A task may not be started until all of the following are true. Any role may bloc
 6. Dependencies resolved, or explicitly deferred with a written note explaining why deferral is safe.
 7. No unresolved ambiguity that would require a stop mid-implementation. If ambiguity exists, resolve it first.
 8. For tasks with branching logic, interactive input, or persistence side effects, a branch matrix exists covering happy path, negative path, edge/boundary states, and illegal or unexpected user actions.
+9. For interactive CLI tasks, screen-state capture and application-state capture method are defined before implementation starts (script or equivalent mechanism), including how manual sessions produce reusable evidence.
 
 For Brownfield tasks, add:
 8. Legacy behavior evidence identified for touched areas (code/runtime traces/tests) and minimum local setup prerequisites verified.
@@ -49,9 +50,10 @@ A task is done only when all of the following are true. Any role may block done-
 5. Traceability links updated: spec requirement to task to test to chronicle entry.
 6. No new technical debt accepted silently: any debt is logged in the task with a rationale and a revisit trigger.
 7. Code quality gates pass: linting, formatting, and static analysis clean.
+8. For interactive CLI tasks, at least one exploratory/manual session is run through capture helpers (or equivalent mechanism), and resulting screen/state artifacts are stored and linked for debugging traceability.
 
 For Brownfield tasks, add:
-8. Behavior parity confirmed against baseline for any changed behavior.
+9. Behavior parity confirmed against baseline for any changed behavior.
 
 ---
 
@@ -209,6 +211,7 @@ Definition of done:
 - Traceability matrix audited; missing links listed as blockers until resolved
 - Maintainability trend metric captured for this cycle (template modification count and direction)
 - Branch evidence collected: expected-vs-actual behavior captured for all user-visible branches and persistence-writing paths; orchestration flows (where input, output, and state combine) validated end-to-end.
+- For interactive CLI projects, manual exploratory session evidence includes screen-state and application-state capture artifacts linked to observed defects or pass confirmations.
 
 Mode-specific done criteria:
 
@@ -233,6 +236,7 @@ Definition of done:
 - Getting-started guide and changelog current
 - Observability alerting confirmed operational
 - Requirement-to-evidence map complete for user-visible branches and persistence-writing paths; no release occurs if orchestration flow evidence is incomplete.
+- For interactive CLI projects, runbook includes how to execute capture helpers and where captured session artifacts are stored for post-failure diagnosis.
 
 Quality pack activation:
 

@@ -14,6 +14,7 @@ In-scope responsibilities:
 1. Propose architecture options with explicit tradeoffs.
 2. Define extension points and likely evolution scenarios.
 3. Set constraints that protect long-term maintainability.
+4. For interactive CLI projects, define diagnostics boundaries early: what screen-state and application-state must be capturable for manual-session debugging.
 
 Out-of-scope boundaries:
 
@@ -56,5 +57,5 @@ Out-of-scope boundaries:
 ## 7. Done Criteria
 
 - Checks passed: architecture path explicitly accepted by user.
-- Artifacts updated: formal spec architecture sections and decision log.
+- Artifacts updated: formal spec architecture sections, decision log, and (if interactive CLI) capture-boundary requirements for screen/application state.
 - Status recorded: progress logged in memory and task list.

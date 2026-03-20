@@ -85,6 +85,11 @@ Map each NFR to measurable criteria. Targets defined here are validated at Stage
 - Integration test approach:
 - Acceptance test approach:
 - Exploratory test focus areas:
+- Interactive CLI diagnostics approach (required if project has interactive CLI UX):
+  - Screen-state capture method:
+  - Application-state capture method:
+  - Manual session execution path (how testers run app through capture helpers):
+  - Artifact storage path and naming convention:
 
 ## 8.1 Downstream Implementation Chronicle Expectations
 

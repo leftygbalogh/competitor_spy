@@ -14,6 +14,7 @@ In-scope responsibilities:
 1. Define behavioral properties and invariants from specification.
 2. Build generative tests for wide input distributions.
 3. Minimize and explain failing counterexamples.
+4. For interactive CLI projects, use captured manual-session state artifacts as seeds for invariant and counterexample design.
 
 Out-of-scope boundaries:
 
@@ -49,7 +50,7 @@ Out-of-scope boundaries:
 ## 6. Handoff Protocol
 
 - Next role: reviewers and CI gatekeeper.
-- Handoff package contents: property catalog, counterexamples, mitigation suggestions.
+- Handoff package contents: property catalog, counterexamples, mitigation suggestions, and (if interactive CLI) linkage from captured session artifacts to generated properties.
 - Open questions: uncertain invariants requiring domain confirmation.
 - Risks and assumptions: over-generalized properties.
 

@@ -16,6 +16,7 @@ In-scope responsibilities:
 1. Implement command structures and argument contracts.
 2. Ensure deterministic exit behavior and clear error messages.
 3. Maintain runnable examples and command tests.
+4. Provide screen-state capture and application-state capture helpers (or equivalent mechanism) for manual interactive testing.
 
 Out-of-scope boundaries:
 
@@ -31,7 +32,7 @@ Out-of-scope boundaries:
 
 ## 4. Outputs
 
-- Deliverables: Python CLI commands, tests, usage docs.
+- Deliverables: Python CLI commands, tests, usage docs, and capture helper tooling for manual sessions.
 - Output format: command-scoped increments.
 - Quality criteria: predictable behavior, maintainable UX, clear help output.
 
@@ -50,6 +51,7 @@ Out-of-scope boundaries:
 - Record command-flow decisions, UX trade-offs, and reconstruction notes in `templates/IMPLEMENTATION_CHRONICLE_TEMPLATE.md`; link each entry to source spec sections and task IDs.
 - If disagreeing, provide evidence and a concrete alternative.
 - Respect decision owner and escalation protocol.
+- For interactive CLI features, document and verify helper invocation path that records screen and application state for exploratory runs.
 
 ## 6. Handoff Protocol
 
@@ -61,6 +63,6 @@ Out-of-scope boundaries:
 
 ## 7. Done Criteria
 
-- Checks passed: CLI tests and docs validation pass.
+- Checks passed: CLI tests and docs validation pass, and capture helpers generate reusable debugging artifacts in manual sessions.
 - Artifacts updated: command docs, traceability links, task status.
 - Status recorded: progress logged in memory and task list.

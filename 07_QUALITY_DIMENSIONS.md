@@ -55,6 +55,7 @@ This is the master quality reference for this template. Every agent persona, sta
 - Negative-path coverage (illegal states, malformed inputs, and unexpected user actions are asserted deliberately)
 - Boundary and edge-case coverage (off-by-one, empty inputs, max values, concurrent access points)
 - Orchestration-path coverage (flows where input parsing, output rendering, and persistence combine are tested end-to-end, not component-isolated)
+- Interactive CLI reproducibility coverage (manual sessions capture screen-state and application-state artifacts so observed defects can be replayed and triaged)
 - Property-based tests (invariants hold across generated inputs)
 - Mutation testing (tests actually detect faults, not just execute)
 - Regression test suite (previously fixed bugs do not return; escaped defects are converted into permanent regression tests)
@@ -98,6 +99,7 @@ This is the master quality reference for this template. Every agent persona, sta
 - Health endpoints
 - Alerting on meaningful signals (not noise)
 - Runbooks for known failure scenarios
+- For interactive CLI projects, screen-state and application-state capture artifacts are retained with clear naming and path conventions for post-failure analysis
 
 ### 10. Documentation
 - Architecture decision records (why decisions were made, not just what)

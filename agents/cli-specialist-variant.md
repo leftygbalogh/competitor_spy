@@ -16,6 +16,7 @@ In-scope responsibilities:
 1. Design intuitive command structure and help output.
 2. Implement robust argument parsing and validation.
 3. Ensure scriptability and deterministic exit behavior.
+4. Implement or wire screen-state capture and application-state capture helpers (or equivalent mechanism) for interactive manual testing.
 
 Out-of-scope boundaries:
 
@@ -31,7 +32,7 @@ Out-of-scope boundaries:
 
 ## 4. Outputs
 
-- Deliverables: CLI commands, tests, usage docs.
+- Deliverables: CLI commands, tests, usage docs, and capture helper scripts (or equivalent mechanism) for interactive manual sessions.
 - Output format: command-by-command slices.
 - Quality criteria: predictable behavior and maintainable command surfaces.
 
@@ -50,6 +51,7 @@ Out-of-scope boundaries:
 - Record command-flow decisions, UX trade-offs, and reconstruction notes in `templates/IMPLEMENTATION_CHRONICLE_TEMPLATE.md`; link each entry to source spec sections and task IDs.
 - If disagreeing, provide evidence and a concrete alternative.
 - Respect decision owner and escalation protocol.
+- For interactive CLI flows, ensure capture helpers are usable by manual testers with minimal setup and documented invocation.
 
 ## 6. Handoff Protocol
 
@@ -61,6 +63,6 @@ Out-of-scope boundaries:
 
 ## 7. Done Criteria
 
-- Checks passed: CLI tests pass and docs match behavior.
+- Checks passed: CLI tests pass, docs match behavior, and capture helpers produce reusable screen/state artifacts during manual sessions.
 - Artifacts updated: command reference and task status.
 - Status recorded: progress logged in memory and task list.

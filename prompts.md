@@ -431,3 +431,10 @@ I created a metaprompter; but I need your help to refine its definition : I want
 
 ### Prompt 097
 Can we make it part of the question / answer process that after I give the agent the brief and we clarify that the brief can be turned into specs, it asks me who will approve the various bits and we select it then?
+
+### Prompt 098
+This is CLI specific, so we need to figure out where this need to be mentioned, whether it is the cli developer agents and/or the architects  and /or testers and/or formal requirements:
+
+CLI programs - always create screen state capture and application state capture helper scripts, or some other means,  so we can use them during manual testing. We run the application through the script, I interactively, manually test it the way I please and the recorded states and screen changes can help identify the bug.
+
+please do

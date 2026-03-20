@@ -32,3 +32,14 @@
   1. Append missing user prompt to `prompts.md`.
   2. Add current status snapshot to `memory.md`.
   3. Commit checkpoint before further stage actions.
+
+## Scenario 5: Stage Collapse Under Detailed Brief
+
+- Symptom: Agent receives a detailed technical brief and starts coding before Stage 2/3 artifacts and approvals.
+- Expected action:
+  1. Stop implementation immediately.
+  2. Log violation and impact in `memory.md`.
+  3. Revert invalid implementation commits using non-destructive `git revert`.
+  4. Complete missing Stage 1/2/3 artifacts and obtain explicit approvals.
+  5. Restart Stage 4 build from approved task list.
+  6. Append process feedback entry to `templates/feedback.json`.

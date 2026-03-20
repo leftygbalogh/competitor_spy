@@ -71,3 +71,13 @@ Request explicit approval before acting when any of the following applies:
 - Planning, analysis, and document drafting are allowed by default.
 - Code changes require explicit user authorization.
 - If unsure whether code is authorized, ask.
+
+## Detailed Brief Handling Policy
+
+- A detailed implementation brief is treated as Stage 1 input, not as automatic permission to skip Stage 2 and Stage 3.
+- Explicit authorization to code does not override stage order.
+- Before writing code, the following must be true:
+	1. Stage 1 artifact complete and approved.
+	2. Stage 2 artifact complete and approved.
+	3. Stage 3 artifact complete and approved.
+- If implementation starts before these approvals, stop immediately, log the violation in `memory.md`, and execute rollback/restart from the last valid stage boundary.

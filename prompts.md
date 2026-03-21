@@ -494,4 +494,4 @@ Stage 1 approved.
 
 ### Prompt 007
 approved
-[U-001 resolved: all four adapters approved — Nominatim, OSM/Overpass, Yelp Fusion, Google Places. U-002 resolved by Team Lead: 40% field-completeness threshold. Stage 2 formally approved.]
+[U-001 resolved: all four adapters approved — Nominatim, OSM/Overpass, Yelp Fusion, Google Places. U-002 resolved by Team Lead: 40% field-completeness threshold. Stage 2 formally approved. Team Lead wrote TASK_LIST.md (CSPY-PLAN-001, T-000 through T-018). Awaiting Stage 3 approval from Lefty.]

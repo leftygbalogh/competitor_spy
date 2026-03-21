@@ -15,8 +15,8 @@ Downstream: `IMPLEMENTATION_CHRONICLE.md` (Layer 3).
 - Declared implementation language(s): Rust (primary), Bash (Linux launcher), PowerShell (Windows launcher)
 - Language-specific constraints: Rust workspace with one crate per layer; async via Tokio; HTTP via reqwest; PDF via printpdf; credentials via age encryption; telemetry via opentelemetry crates.
 - Source brief: `PROJECT_BRIEF.md`
-- Approval authority source: Team Lead Agent (delegated; brief §8.2); U-001 source licensing is owner-retained (Lefty)
-- Status: Draft — awaiting Stage 2 approval
+- Approval authority source: Team Lead Agent (delegated; brief §8.2)
+- Status: APPROVED — 2026-03-21
 - Author: Formal Specification Lead (Team Lead Agent)
 - Reviewers: Domain Discovery Lead, Security Specialist
 - Active Q3 modules: Data Quality, Compliance and Auditability, Interactive CLI Diagnostics, Security and Production-Readiness Loop, Q3-ARCH-01 Layered Architecture
@@ -368,8 +368,8 @@ competitor_spy_adapters       (async; implements SourceAdapter trait; HTTP I/O o
 +-- trait SourceAdapter       -- defined here; implemented per adapter module
 +-- nominatim                 -- OSM geocoding (no credential required)
 +-- osm_overpass              -- Overpass API (no credential required)
-+-- yelp                      -- Yelp Fusion API (credential required; U-001 pending)
-+-- google_places             -- Google Places API (credential required; U-001 pending)
++-- yelp                      -- Yelp Fusion API (credential required; approved U-001 2026-03-21)
++-- google_places             -- Google Places API (credential required; approved U-001 2026-03-21)
 
 competitor_spy_output         (sync; no domain logic; pure rendering)
 +-- terminal                  -- formats SearchRun to stdout
@@ -533,15 +533,15 @@ pub trait ScoringStrategy: Send + Sync {
 
 ---
 
-## 11. Open Items Blocking Stage 3
+## 11. Open Items
 
-- **U-001 — Source licensing (OWNER-RETAINED, Lefty):** Before Stage 3 Plan approval, confirm which candidate adapters (OSM/Overpass, Nominatim, Yelp Fusion, Google Places) are approved for automated querying under their terms of service. Adapters for unapproved sources must be excluded from the Stage 3 task list.
-- **U-002 — Field-completeness threshold:** Define minimum percentage of profile fields that constitutes an "actionable" report, for use in zero-competitor and low-data warning messages. Can be decided by Team Lead Agent during Stage 3 planning.
+- **U-001 — Source licensing (RESOLVED 2026-03-21, Lefty):** All four candidate adapters approved for automated querying: Nominatim, OSM/Overpass, Yelp Fusion, Google Places. Pacing policy (5-15s per request) satisfies fair-use expectations for all four.
+- **U-002 — Field-completeness threshold:** Define minimum percentage of profile fields that constitutes an "actionable" report, for use in zero-competitor and low-data warning messages. Decided by Team Lead Agent: threshold = 40% fields present (i.e., at least 4 of the ~10 defined fields have a non-Absent DataPoint). Warn if below threshold; do not error.
 
 ---
 
 ## 12. Stage 2 Approval
 
-- Approved by: TBD (Team Lead Agent delegated — pending U-001 source licensing decision from Lefty)
-- Approval date: TBD
-- Notes: Spec is complete and internally consistent. U-001 is the sole owner-retained blocking item before Stage 3.
+- Approved by: Team Lead Agent (delegated authority per PROJECT_BRIEF.md §8.2)
+- Approval date: 2026-03-21
+- Notes: U-001 resolved by Lefty 2026-03-21 — all four adapters approved. U-002 resolved by Team Lead (40% field-completeness threshold). Spec frozen for Stage 3 planning. Breaking changes to `domain::run::execute` signature require an ADR before any Stage 4 implementation.

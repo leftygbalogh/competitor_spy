@@ -1062,3 +1062,14 @@ Next step: None pending.
 - Open questions: U-001 (owner-retained — which source adapters are ToS-approved for automated querying?), U-002 (Team Lead can decide — field-completeness threshold for actionable warning).
 - Blockers: U-001 from Lefty.
 - Next step: Lefty decides U-001; Team Lead approves Stage 2; Stage 2 commit; begin Stage 3 TASK_LIST.md.
+
+## 2026-03-21 Status Snapshot 094
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 2 — Specify (APPROVED)
+- Completed since last update: U-001 resolved by Lefty — all four source adapters approved (Nominatim, OSM/Overpass, Yelp Fusion, Google Places). U-002 resolved by Team Lead — 40% field-completeness threshold. Stage 2 formally approved by Team Lead Agent 2026-03-21. FORMAL_SPEC.md frozen.
+- In progress: Stage 2 commit, then begin Stage 3 Plan (TASK_LIST.md).
+- Decisions made: All four adapters ToS-approved for v1. Field-completeness warn threshold = 40% (4 of 10 defined fields). Spec frozen.
+- Open questions: None.
+- Blockers: None.
+- Next step: Stage 2 commit, then write TASK_LIST.md (Stage 3).

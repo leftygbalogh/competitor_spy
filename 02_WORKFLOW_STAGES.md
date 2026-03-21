@@ -97,6 +97,7 @@ Definition of done:
 - Open questions listed and resolved or deferred
 - Scope boundaries documented
 - Intended implementation language(s) declared (primary required, secondary optional)
+- Discovery questions explicitly cover all required fields in `PROJECT_BRIEF.md` sections 1 through 8.2; unanswered fields are marked `TBD` with named follow-up owners
 - Q3 module triggers declared (data quality, compliance) or explicitly ruled out
 - Approval authority selection completed for Stage 2 through Stage 6 (owner-only or delegated approver per stage)
 - If delegation is enabled, exception list and prototype handback trigger are documented in the project brief

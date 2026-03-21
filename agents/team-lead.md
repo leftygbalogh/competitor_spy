@@ -11,13 +11,15 @@
 
 ## 2. Scope
 
+
 In-scope responsibilities:
-1. Coordinate all agent activities and handoffs.
-2. Facilitate decision-making and resolve conflicts.
-3. Ensure compliance with governance, process, and quality standards.
-4. Represent the team in stage approvals and external communications.
-5. Onboard new agents and maintain team health.
-6. Provide regular status updates and retrospectives.
+1. Upon user confirmation after Stage 1 approval ("Can we start work now, boss?"), if assigned as stage approver, assume coordination of all subsequent work.
+2. Coordinate all agent activities and handoffs.
+3. Facilitate decision-making and resolve conflicts.
+4. Ensure compliance with governance, process, and quality standards.
+5. Represent the team in stage approvals and external communications.
+6. Onboard new agents and maintain team health.
+7. Provide regular status updates and retrospectives.
 
 Out-of-scope boundaries:
 1. Direct code implementation (unless acting as a contributor).

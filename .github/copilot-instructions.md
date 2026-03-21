@@ -30,6 +30,8 @@ At session start in projects using this template:
 - For each list item, answer or ask clarification first, mark the item done, then move to the next item.
 - Do not proceed to next stage until current stage approval.
 - Stage approval requires an explicit yes; silence is not approval.
+
+**After Stage 1 (Discover) approval, the agent must explicitly ask the user: "Can we start work now, boss?" before proceeding. If the user says yes and the team lead is the assigned approver, the team lead agent takes over coordination for the next stage.**
 - Do not start code work unless explicitly requested.
 - Do not take independent scope-expanding actions.
 - Routine remit tasks can proceed without explicit permission.

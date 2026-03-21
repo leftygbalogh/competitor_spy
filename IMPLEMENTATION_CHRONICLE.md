@@ -1,95 +1,71 @@
 # Implementation Chronicle
 
-## Entry CHR-RSNK-001
-
-- Task: T-000
-- Source requirements: FR-001..FR-015
-- Decision: use layered structure with reusable game core in src/lib.rs and runtime adapter in src/main.rs.
-- Why: enforces Q3-ARCH-01 and keeps behavior testable independently from terminal concerns.
-- Evidence: Cargo crate structure and API usage from main into lib.
-
-## Entry CHR-RSNK-002
+## Entry CHR-SNK-001
 
 - Task: T-001
-- Source requirements: FR-001, FR-008, FR-010
-- Decision: startup size validation occurs before entering alternate screen gameplay loop.
-- Why: guarantees deterministic print + log + exit even if runtime UI setup cannot proceed.
-- Evidence: terminal_size_ok and startup branch in main.
+- Requirement: FR-001, FR-006, NFR-004
+- Decision: enforce startup minimum size check before any curses init.
+- Why: guarantees required print+log+exit behavior even when rendering cannot start.
+- Evidence: `startup_size_check` and `log_size_crash` implementation.
 
-## Entry CHR-RSNK-003
+## Entry CHR-SNK-002
 
 - Task: T-002
-- Source requirements: FR-001
-- Decision: head is centered and the game blocks at pre-start prompt until key press.
-- Why: exact startup behavior contract.
-- Evidence: board_center, start_state, and wait_for_start implementation.
+- Requirement: FR-001
+- Decision: center head at `fixed_width // 2`, `fixed_height // 2`; pre-start loop waits for any key.
+- Why: exact startup placement and wait behavior from brief.
+- Evidence: pre-start state in `run_game`.
 
-## Entry CHR-RSNK-004
+## Entry CHR-SNK-003
 
 - Task: T-003
-- Source requirements: FR-002
-- Decision: fixed 120ms tick and arrow-key-only direction mapping.
-- Why: user controls direction only; speed is not configurable.
-- Evidence: TICK_MS, key_to_direction, and event loop logic.
+- Requirement: FR-002
+- Decision: constant-tick movement with direction updates from arrow keys only.
+- Why: player controls direction only; no speed control.
+- Evidence: `KEY_TO_DIR`, movement loop, fixed `TICK_SECONDS`.
 
-## Entry CHR-RSNK-005
+## Entry CHR-SNK-004
 
 - Task: T-004
-- Source requirements: FR-003, FR-004
-- Decision: apple placement samples only empty cells from full board scan.
-- Why: guarantees one-apple-on-empty-space invariant.
-- Evidence: choose_apple and apple-eat branch in tick.
+- Requirement: FR-003
+- Decision: when apple eaten, insert old head behind new head: `[new_head, old_head] + rest`.
+- Why: implements growth directly behind head exactly as specified.
+- Evidence: apple-eat branch in game loop.
 
-## Entry CHR-RSNK-006
+## Entry CHR-SNK-005
 
 - Task: T-005
-- Source requirements: FR-004, FR-005
-- Decision: enforce explicit bounds with immediate loss on out-of-range or self-hit.
-- Why: no-wrap and strict wall/self-collision semantics.
-- Evidence: is_inside and tick loss branches.
+- Requirement: FR-004
+- Decision: out-of-bounds and body-hit end game immediately.
+- Why: strict wall/self collision loss semantics, no wraparound.
+- Evidence: collision checks before snake update finalization.
 
-## Entry CHR-RSNK-007
+## Entry CHR-SNK-006
 
 - Task: T-006
-- Source requirements: FR-007
-- Decision: win is emitted only after apple consume causes snake length to equal board cell count.
-- Why: matches exact final-apple full-board rule.
-- Evidence: board_cells check in tick.
+- Requirement: FR-005
+- Decision: win on full board after final apple consumption.
+- Why: exact explicit win contract from brief.
+- Evidence: `if len(snake) == fixed_width * fixed_height` after growth.
 
-## Entry CHR-RSNK-008
+## Entry CHR-SNK-007
 
 - Task: T-007
-- Source requirements: FR-009, FR-010
-- Decision: runtime terminal size is checked every loop and compared against fixed startup dimensions.
-- Why: fixed-board guarantee with deterministic runtime crash behavior.
-- Evidence: terminal::size polling and RuntimeTooSmall branch.
+- Requirement: FR-007
+- Decision: only write leaderboard when `score > previous_high`.
+- Why: brief prohibits non-record writes and prompts.
+- Evidence: conditional name prompt and write path in `main`.
 
-## Entry CHR-RSNK-009
+## Entry CHR-SNK-008
 
 - Task: T-008
-- Source requirements: FR-011..FR-014
-- Decision: new-high-only persistence path with name length clamp to 5 chars.
-- Why: exactly matches leaderboard prompt/write constraints.
-- Evidence: previous_high, record_new_high, and endgame branch in main.
-
-## Entry CHR-RSNK-010
-
-- Task: T-009
-- Source requirements: FR-015
-- Decision: Bash launcher detects MSYS/WSL and uses winpty when available in Git Bash contexts.
-- Why: supports mixed shell environments while keeping launcher scope minimal.
-- Evidence: run_snake.sh runtime routing logic.
-
-## Entry CHR-RSNK-011
-
-- Task: T-010
-- Source requirements: Stage 5 Verify
-- Decision: verification evidence recorded from cargo test and release build; non-testable local shell gaps are documented explicitly.
-- Why: maintain truthful evidence without silent assumptions.
-- Evidence: cargo test -q pass, cargo build --release pass, docs/evidence/environment-matrix.md.
+- Requirement: runtime terminal support in Git Bash
+- Decision: Bash launcher uses `winpty` on MSYS if available.
+- Why: enables curses compatibility under Git Bash on Windows.
+- Evidence: `run_snake.sh` conditional execution path.
 
 ## Stage 4 Approval
 
 - Approved by: Team Lead Agent (delegated)
-- Approval date: 2026-03-21
-- Notes: Build complete and chronicle links updated for all implemented tasks.
+- Approval date: 2026-03-20
+- Notes: Build complete with chronicle links for all tasks.

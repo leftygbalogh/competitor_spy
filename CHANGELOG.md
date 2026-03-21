@@ -1,16 +1,5 @@
 # Changelog
 
-## 2.0.0 - 2026-03-21
-
-- Started new approved Greenfield Rust cycle for terminal Snake.
-- Replaced prior Python-stage artifacts with Rust-aligned brief, spec, plan, and chronicle.
-- Implemented Rust game core in src/lib.rs and terminal runtime in src/main.rs.
-- Added Bash launcher run_snake.sh with MSYS/WSL/Linux routing and winpty support path.
-- Added crash logging contract for startup/runtime terminal size failures.
-- Added leaderboard new-high-only persistence logic and endgame flow.
-- Verified with cargo test -q and cargo build --release.
-- Verified launcher smoke execution in Git Bash and documented remaining Linux/WSL parity checks.
-
 ## 1.1.0 - 2026-03-20
 
 - Completed Stage 5 Verify with explicit evidence checks.

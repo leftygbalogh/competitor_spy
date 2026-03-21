@@ -1,33 +1,33 @@
 # Getting Started
 
-## Project
+## Goal
 
-Rust Terminal Snake Game (Greenfield).
+Use this governance template as the active policy and workflow layer for a new software project.
 
-## Prerequisites
+## Quick Start
 
-1. Rust toolchain with cargo in PATH.
-2. Bash runtime for launcher execution (Git Bash, Linux Bash, or WSL Bash).
+1. Copy this folder into your target project.
+2. Rename it to a project-specific governance folder.
+3. Initialize git repository if missing.
+4. Read files in the discovery order listed in `README.md`.
+5. First discovery question must select project mode: Greenfield or Brownfield.
+6. Complete and approve artifacts in order:
+   - `PROJECT_BRIEF.md`
+   - `FORMAL_SPEC.md`
+   - `TASK_LIST.md`
+   - `IMPLEMENTATION_CHRONICLE.md`
+7. Enforce stage gates:
+   - explicit approval required
+   - stage-completion commit required
 
-## Build and Test
+## Linux Compliance Setup
 
-1. cargo test -q
-2. cargo build --release
+1. Ensure `.gitattributes` enforces LF (`* text=auto eol=lf`).
+2. Ensure `.editorconfig` sets `end_of_line = lf`.
+3. Use POSIX-style paths (`/`) in governance examples unless platform-specific behavior is being documented.
+4. Prefer Linux-compatible shell command examples for shared runbooks and onboarding docs.
 
-## Run
+## Required Logs
 
-From repository root:
-
-1. ./run_snake.sh
-
-The launcher builds release binary if missing and routes runtime by shell environment.
-
-## Runtime Artifacts
-
-- Crash log: snake.log
-- Leaderboard store: leaderboard.csv
-
-## Governance Records
-
-- prompts.md contains full prompt history.
-- memory.md contains stage-by-stage status and decisions.
+- Append every user prompt to `prompts.md`.
+- Keep `memory.md` updated with status, decisions, blockers, and next step.

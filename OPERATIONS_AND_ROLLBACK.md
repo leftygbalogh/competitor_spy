@@ -2,27 +2,27 @@
 
 ## Operational Notes
 
-- Start gameplay via run_snake.sh.
-- Game binary path: target/release/rust_terminal_snake_game.
-- Crash records append to snake.log with timestamp_gmt, width, height, reason.
-- Leaderboard persistence file is leaderboard.csv and updates only on new all-time highs.
+- Governance artifacts are source of truth and must be updated in stage order.
+- Required logs are `prompts.md` and `memory.md`.
+- Stage transitions require explicit approval and a stage-completion commit.
+- Verify-stage traceability gaps are blockers and must be resolved before closure.
 
 ## Rollback Triggers
 
-- Stage-gate protocol breach.
-- Release build or tests fail after accepted baseline.
-- Runtime regression in startup/runtime size-failure handling.
-- Leaderboard rule regression (non-record prompt/write).
+- A stage was advanced without explicit approval.
+- A required artifact was skipped or corrupted.
+- Traceability links are missing for done items.
+- Brownfield confidence gate was bypassed.
 
 ## Rollback Procedure
 
-1. Identify last good commit with passing cargo test -q and cargo build --release evidence.
+1. Identify last valid stage-completion commit using `git log --oneline`.
 2. Create a recovery branch from current HEAD.
-3. Revert invalid commit set with git revert.
-4. Re-run verification commands.
-5. Re-check docs/evidence/traceability.md and docs/evidence/environment-matrix.md.
-6. Record recovery actions in memory.md and resume gated workflow.
+3. Revert only the invalid commit(s) using non-destructive `git revert`.
+4. Re-run the affected stage checklist.
+5. Record rollback reason and recovery actions in `memory.md`.
+6. Re-request stage approval and commit completion again.
 
 ## Safety Rule
 
-- Use non-destructive rollback for shared history.
+- Do not use destructive history rewrite for shared history during normal governance recovery.

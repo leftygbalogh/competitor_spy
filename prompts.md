@@ -488,3 +488,6 @@ OQ-001 answer: Will likely turn this into a web application, possibly in a diffe
 
 ### Prompt 005
 Stage 1 approved.
+
+### Prompt 006
+[Session resumed after token budget exceeded.] Agent wrote FORMAL_SPEC.md (CSPY-SPEC-001 v1.0, 547 lines) — domain model, behavioral contracts, decision tables, interface contracts, Q3-ARCH-01 layered architecture, quality targets, test strategy, traceability matrix. U-001 source licensing decision requested from Lefty.

@@ -1051,3 +1051,14 @@ Next step: None pending.
 - Open questions: None.
 - Blockers: None.
 - Next step: Commit stage 1 artifacts, then start Stage 2 Specify on Lefty go-ahead.
+
+## 2026-03-21 Status Snapshot 093
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 2 — Specify (Draft complete; awaiting U-001 decision and Stage 2 approval)
+- Completed since last update: FORMAL_SPEC.md fully written (CSPY-SPEC-001 v1.0, 547 lines). All 12 sections complete: domain model, statecharts, behavioral contracts, decision tables, interface contracts, layered architecture (Q3-ARCH-01), quality targets, test strategy, traceability matrix, open items.
+- In progress: Awaiting U-001 source licensing decision from Lefty before Stage 2 can be formally approved and Stage 3 can begin.
+- Decisions made: Spec confirms 6-crate Rust workspace; Tokio/reqwest/printpdf/age/opentelemetry; SourceAdapter trait defined; RankingEngine and ScoringStrategy traits defined; CLI-to-API mapping locked.
+- Open questions: U-001 (owner-retained — which source adapters are ToS-approved for automated querying?), U-002 (Team Lead can decide — field-completeness threshold for actionable warning).
+- Blockers: U-001 from Lefty.
+- Next step: Lefty decides U-001; Team Lead approves Stage 2; Stage 2 commit; begin Stage 3 TASK_LIST.md.

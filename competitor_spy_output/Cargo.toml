@@ -8,5 +8,7 @@ license.workspace = true
 [dependencies]
 competitor_spy_domain = { path = "../competitor_spy_domain" }
 printpdf = { workspace = true }
-thiserror = { workspace = true }
+
+[dev-dependencies]
+uuid = { workspace = true }
 chrono = { workspace = true }

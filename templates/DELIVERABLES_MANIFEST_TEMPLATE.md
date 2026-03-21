@@ -15,10 +15,13 @@
 - POST_RELEASE_MONITORING.md
 - CHANGELOG.md
 - GETTING_STARTED.md
+- docs/user/README.md (end-user documentation: installation guide, user guide; include applicable sections only)
+- docs/admin/ (admin and operations guide: configuration reference, operator runbook, monitoring)
 - feedback.json (project-local)
 - docs/evidence/pair-programming-log.md
 - ADR set
 - API contract docs
+- docs/api/guide.md (API usage guide with worked examples)
 - Traceability report
 - Security review report
 - Threat model

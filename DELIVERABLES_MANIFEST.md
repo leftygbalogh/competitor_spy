@@ -19,10 +19,13 @@ Purpose: define what an industrial-grade software delivery should include beyond
 | Post-release monitoring plan | POST_RELEASE_MONITORING.md | production health controls |
 | Changelog | CHANGELOG.md | version and change trace |
 | Getting started / setup guide | GETTING_STARTED.md | onboarding and reproducibility |
+| End-user documentation | docs/user/README.md | installation guide and user guide for non-developer end users; include only applicable sections |
+| Admin and operations guide | docs/admin/ | configuration reference, environment variables, operator runbook, and monitoring guide |
 | Feedback proposals | templates/feedback.json (project-local) | process improvement capture |
 | Pair programming session log | docs/evidence/pair-programming-log.md | auditable driver/navigator collaboration evidence |
 | Architecture Decision Records (ADRs) | docs/adr/ | significant design decisions |
 | API contract docs | docs/api/ | external or internal API surface |
+| API usage guide | docs/api/guide.md | annotated API guide with worked examples for integrators |
 | Traceability report (FR/NFR -> tests/evidence) | docs/evidence/traceability.md | regulated/high-assurance projects |
 | Security review report | docs/security/ | security-sensitive or public deployment |
 | Threat model | docs/security/threat-model.md | internet-facing or sensitive data scope |

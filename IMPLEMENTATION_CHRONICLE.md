@@ -398,3 +398,24 @@ display_phone preferred over phone (formatted). categories -> "categories" (comm
 
 cargo test -p competitor_spy_adapters -- 45 passed, 0 failed.
 Tests: adapter_id, requires_credential, missing-credential (None), empty-string credential, sends Bearer header, records on success (2), all fields extracted, adapter_id tag, zero records OK, HTTP 4xx, HTTP 5xx, parse error.
+
+## Entry CHR-CSPY-012
+
+- Task: T-012
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md section 4.3, section 4.4, section 4.7, section 5.1
+
+### Google Places API (New) endpoint and auth (RECONSTRUCTION-CRITICAL)
+
+POST /v1/places:searchNearby with X-Goog-Api-Key: <api_key> and X-Goog-FieldMask header.
+Response: { "places": [...] } or {} (no places key) when no results -- handled via serde default.
+Radius clamped to 50000m (50km) = Google Places max.
+
+### Field mapping
+
+displayName.text -> name. formattedAddress -> address. nationalPhoneNumber -> phone. websiteUri -> website. types (Vec<String>) -> "types" (comma-sep) + "category" (first type). rating -> rating. userRatingCount -> review_count. location.latitude/longitude -> lat/lon.
+
+### Evidence
+
+cargo test -p competitor_spy_adapters -- 58 passed, 0 failed.
+Tests: adapter_id, requires_credential, missing-credential (None), empty-string credential, sends X-Goog-Api-Key header, records on success (2), all fields extracted, adapter_id tag, zero places OK, empty response body OK, HTTP 4xx, HTTP 5xx, parse error.

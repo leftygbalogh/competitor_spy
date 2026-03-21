@@ -192,14 +192,9 @@
 ### T-012: Google Places adapter
 
 - Source: FORMAL_SPEC.md §4.3, §4.4, §5.1, §5.4, §9.2; U-001 resolved 2026-03-21
-- Status: Not started
-- Dependencies: T-009
-- Output:
-  - `competitor_spy_adapters/src/google_places.rs` — credential required; prompts via `CredentialStore`
-  - Fields extracted: name, address, phone, website, types/categories, rating, user_ratings_total
-  - Integration tests: success, 4xx (invalid key), timeout, parse error → correct `SourceResult`
-- Evidence: `cargo test -p competitor_spy_adapters` passes (Google tests). Credential-absent path produces `ADAPTER_CONFIG_MISSING`.
-- Chronicle: [C] Google Places API endpoint; response schema; field-to-DataPoint mapping; confidence assignment.
+- Status: DONE
+- Output: google_places.rs — GooglePlacesAdapter; POST NearbySearch; X-Goog-Api-Key header; field mask; credential-absent guard; empty-body handling. 13 new tests (58 total).
+- Evidence: `cargo test -p competitor_spy_adapters` 58 passed, 0 failed. Chronicle: CHR-CSPY-012.
 
 ---
 

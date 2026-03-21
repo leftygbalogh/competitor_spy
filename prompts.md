@@ -495,3 +495,11 @@ Stage 1 approved.
 ### Prompt 007
 approved
 [U-001 resolved: all four adapters approved — Nominatim, OSM/Overpass, Yelp Fusion, Google Places. U-002 resolved by Team Lead: 40% field-completeness threshold. Stage 2 formally approved. Team Lead wrote TASK_LIST.md (CSPY-PLAN-001, T-000 through T-018). Awaiting Stage 3 approval from Lefty.]
+
+### Prompt 008
+Can the team-lead not approve this?
+[Clarified: Team Lead delegation is default, not mandate; Lefty holds override. Lefty asked for direct confirmation.]
+
+### Prompt 009
+I hereby explicitly hand over approver rights for all subsequent stages to the Team Lead Agent. If he is in doubt, he should consult the Oracle Agent or the Claire Voyant Agent and then approve.
+[Full stage approval delegation granted to Team Lead Agent for all stages including Stage 6. Consultation protocol added (Oracle for policy, Claire Voyant for risk). PROJECT_BRIEF.md updated. Team Lead immediately approves Stage 3. Stage 4 Build begins.]

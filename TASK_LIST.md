@@ -7,8 +7,8 @@
 - Source spec: `FORMAL_SPEC.md` (CSPY-SPEC-001 v1.0, approved 2026-03-21)
 - Mode: Greenfield
 - Date: 2026-03-21 UTC
-- Approver: Team Lead Agent (delegated); Lefty retains Stage 6 and scope changes
-- Status: Draft — pending Stage 3 approval from Lefty
+- Approver: Team Lead Agent (full delegation for all stages by Lefty 2026-03-21; consult Oracle or Claire Voyant when in doubt)
+- Status: APPROVED — Team Lead Agent, 2026-03-21
 
 ---
 

@@ -151,32 +151,32 @@ Expected downstream links: `FORMAL_SPEC.md` (Layer 2) and `IMPLEMENTATION_CHRONI
 
 ## 8.2 Approval Authority and Delegation
 
-- Delegation mode: Team lead with exceptions
+- Delegation mode: Team lead for all stages
 - Delegated approver role: Team Lead Agent
 - Delegation start stage: Stage 2
-- Delegation end condition: Continuous through Stage 5; Stage 6 release approval reverts to owner
+- Delegation end condition: All stages including Stage 6 — explicit full delegation by Lefty 2026-03-21
+- Consultation protocol: When Team Lead is in doubt on any approval decision, consult Oracle Agent (authoritative/policy questions) or Claire Voyant Agent (risk/scenario questions) before approving
 
 Intra-stage autonomy profile:
 
 - Autonomy level: Balanced
 - Allowed without owner approval: Implementation details within approved scope, intra-stage design decisions, adapter selection from approved source list, test strategy execution
-- Must escalate to owner even during delegated stages: Scope changes, security/compliance-impacting decisions, new external dependency additions with legal or operational impact, any release override
+- Must escalate to owner even during delegated stages: Scope changes, security/compliance-impacting decisions, new external dependency additions with legal or operational impact
 - Assumption policy: No silent assumptions; one-question clarification first, then one explicit working assumption requiring yes/no before continuation
 
 Stage-by-stage approver selection:
 
-- Stage 2 Specify approved by: Team Lead Agent (delegated)
+- Stage 2 Specify approved by: Team Lead Agent (approved 2026-03-21)
 - Stage 3 Plan approved by: Team Lead Agent (delegated)
 - Stage 4 Build approved by: Team Lead Agent (delegated)
 - Stage 5 Verify approved by: Team Lead Agent (delegated)
-- Stage 6 Release approved by: Lefty (owner-retained)
+- Stage 6 Release approved by: Team Lead Agent (delegated; full delegation explicit by Lefty 2026-03-21)
 
-Owner-retained exceptions:
+Owner-retained exceptions (non-stage-approval items only):
 
 - Scope change approvals: Lefty
 - Security/compliance-impacting decisions: Lefty
 - Dependency additions with legal or operational impact: Lefty
-- Release approval override rule: Lefty must give explicit release go-ahead regardless of delegation
 
 Prototype handback trigger:
 

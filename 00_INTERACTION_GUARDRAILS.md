@@ -85,6 +85,14 @@
 - Record a short changelog entry whenever governance is materially improved.
 - Baseline approval: Approved v1 baseline
 - Changelog:
+	- v1.1 (2026-03-21): added Linux compliance baseline for line endings, shell conventions, and path style.
 	- v1.0 (2026-03-19): consolidated governance framework, mode model, command chain, personality model, Rust-primary and Python-secondary persona packs.
-- Version: 1.0
-- Last updated: 2026-03-19
+- Version: 1.1
+- Last updated: 2026-03-21
+
+## 12. Linux Compliance Baseline
+
+- Repository text files must use LF (`\n`) line endings.
+- Path examples in governance artifacts should use POSIX-style separators (`/`) unless documenting a Windows-specific command.
+- Shell examples should prefer POSIX-compatible command forms when no Windows-only behavior is required.
+- Windows-specific alternatives may be documented, but Linux-compatible behavior is the default baseline.

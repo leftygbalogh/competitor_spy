@@ -20,6 +20,13 @@ Use this governance template as the active policy and workflow layer for a new s
    - explicit approval required
    - stage-completion commit required
 
+## Linux Compliance Setup
+
+1. Ensure `.gitattributes` enforces LF (`* text=auto eol=lf`).
+2. Ensure `.editorconfig` sets `end_of_line = lf`.
+3. Use POSIX-style paths (`/`) in governance examples unless platform-specific behavior is being documented.
+4. Prefer Linux-compatible shell command examples for shared runbooks and onboarding docs.
+
 ## Required Logs
 
 - Append every user prompt to `prompts.md`.

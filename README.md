@@ -38,6 +38,10 @@ Read and apply files in this order:
 - Do not write code unless explicitly instructed to do so.
 - Record every user prompt in `prompts.md`.
 - Maintain `memory.md` with current status, decisions, blockers, and next step.
+- Linux compliance baseline applies to all template artifacts:
+  - Text files must use LF line endings.
+  - Path examples should use POSIX-style `/` separators by default.
+  - Shell examples should be Linux-compatible unless a Windows-specific path is explicitly required.
 - For new projects based on this template:
   - Initialize a git repository.
   - Copy this folder as project-specific governance folder.

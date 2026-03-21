@@ -1107,6 +1107,17 @@ Next step: None pending.
 - Blockers: None.
 - Next step: Commit T-001, then begin T-002 (BusinessProfile, DataPoint, Confidence, Competitor).
 
+## 2026-03-21 Status Snapshot 102
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 4 -- Build (T-008 DONE)
+- Completed since last update: T-008 complete. Telemetry init (tracing-subscriber + OTel stdout), secret redaction filter (no regex crate, word-boundary-aware). 15 tests green.
+- In progress: T-008 commit; then T-009.
+- Decisions made: Authorization header redacts entire rest of line. No regex crate (ReDoS avoidance). TelemetryGuard holds run_id (UUID v4).
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit T-008, then begin T-009 (SourceAdapter trait + Nominatim geocoding adapter).
+
 ## 2026-03-21 Status Snapshot 101
 
 - Timestamp: 2026-03-21

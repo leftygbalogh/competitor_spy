@@ -286,3 +286,21 @@ The deduplication loop is O(n²) over competitors. The maximum practical n is bo
 - `cargo test -p competitor_spy_domain` — 12 passed, 0 failed.
 - Tests cover: Radius valid/invalid/km_value, Location valid/boundary/lat-out/lon-out, SearchQuery valid/empty-industry/whitespace-industry/empty-location/whitespace-location.
 - Canonical vector FORMAL_SPEC.md §9.7 confirmed: `SearchQuery::new("yoga studio", "Amsterdam, Netherlands", Radius::Km10)` returns Ok.
+
+## Entry CHR-CSPY-008
+
+- Task: T-008
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md section 6.3 (Audit Log Contract), section 7.1
+
+### Decision: tracing-subscriber + OTel stdout pipeline
+
+init_telemetry(log_level) installs a global tracing subscriber with: (1) fmt layer to stderr, (2) OTel layer to stdout SpanExporter. TelemetryGuard.drop() shuts down the OTel pipeline. run_id is Uuid::new_v4() generated at init.
+
+### Decision: pre-emit redaction via redact::redact(s) -- no regex crate
+
+Keyword-based hand-coded matchers. No regex crate (avoids ReDoS risk). Patterns: Authorization (entire rest of line), Bearer token, api_key/apikey/api-key, token, secret/client_secret, password, key (word-boundary). Authorization redacts to end of newline, not just first word.
+
+### Evidence
+
+cargo test -p competitor_spy_telemetry -- 15 passed, 0 failed. Tests: all redact patterns, case-insensitivity, multi-secret, word-boundary (keyboard not redacted), unknown log level error, valid levels, run_id uniqueness.

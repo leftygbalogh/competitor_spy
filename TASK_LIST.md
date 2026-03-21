@@ -151,7 +151,7 @@
 ### T-008: Telemetry initialisation and secret redaction filter
 
 - Source: FORMAL_SPEC.md §6.3, §7.1, §9.2 (telemetry event coverage test)
-- Status: Not started
+- Status: DONE -- 2026-03-21 -- commit pending (CHR-CSPY-008; 15 tests green)
 - Dependencies: T-003
 - Output:
   - `competitor_spy_telemetry/src/lib.rs` — OTel initialisation; pre-emit secret redaction filter

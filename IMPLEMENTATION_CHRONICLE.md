@@ -304,3 +304,38 @@ Keyword-based hand-coded matchers. No regex crate (avoids ReDoS risk). Patterns:
 ### Evidence
 
 cargo test -p competitor_spy_telemetry -- 15 passed, 0 failed. Tests: all redact patterns, case-insensitivity, multi-secret, word-boundary (keyboard not redacted), unknown log level error, valid levels, run_id uniqueness.
+
+## Entry CHR-CSPY-009
+
+- Task: T-009
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md section 4.2 (geocoding), section 4.3 (SourceAdapter lifecycle), section 6.3 (audit log)
+
+### Decision: Geocoder trait + SourceAdapter trait separation
+
+GeocodingError is a distinct error type (NoResults | Http(u16) | Parse(String)). Geocoder trait handles location resolution; SourceAdapter trait handles competitor collection. Both defined in adapter.rs. Nominatim implements both in nominatim.rs.
+
+### Decision: First result = highest confidence
+
+Nominatim returns results ordered by score. First item selected as resolved location. Multiple candidates emit a geocoding_result audit event noting selected display_name and count.
+
+### Nominatim geocoder URL and response schema
+
+GET /search?q=<location>&format=jsonv2&limit=5
+Response: JSON array; fields lat (String), lon (String), display_name (String), name (String?), osm_id (u64?), osm_type (String?), addresstype (String?), importance (f64?), extratags (HashMap?).
+CRITICAL: lat/lon are STRING values in Nominatim jsonv2 -- parsed with str.parse::<f64>() after serde deserialization.
+
+### Nominatim adapter URL and response schema
+
+GET /search?q=<industry near lat,lon radius Nkm>&format=jsonv2&limit=50&addressdetails=1&extratags=1
+Adapter emits adapter_request span with URL = hostname+path only (no query params per section 6.3).
+Records: one RawRecord per result; all fields stored; adapter_id tag on every record; extratags flattened with extra_ prefix.
+
+### PacingPolicy usage in tests
+
+PacingPolicy::from_seed(0, true) used in with_client() test constructors (zero_delay=true). Production constructors use PacingPolicy::new().
+
+### Evidence
+
+cargo test -p competitor_spy_adapters -- 19 passed, 0 failed.
+Tests cover geocoding success, multiple candidates (first selected), no results, HTTP 4xx, HTTP 5xx, parse error on bad lat; adapter: adapter_id, requires_credential, records on success (2 records), zero-record success, HTTP 4xx fail, HTTP 5xx fail, parse error fail, adapter_id tag on record, credential arg ignored.

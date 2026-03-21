@@ -1107,6 +1107,17 @@ Next step: None pending.
 - Blockers: None.
 - Next step: Commit T-001, then begin T-002 (BusinessProfile, DataPoint, Confidence, Competitor).
 
+## 2026-03-21 Status Snapshot 103
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 4 -- Build (T-009 DONE)
+- Completed since last update: T-009 complete. SourceAdapter+Geocoder traits in adapter.rs; NominatimGeocoder + NominatimAdapter in nominatim.rs. 15 new tests (19 total in adapters crate). Added tracing dep to adapters Cargo.toml.
+- In progress: T-009 commit; then T-010.
+- Decisions made: Geocoder trait and SourceAdapter trait separated. First Nominatim result = highest confidence. lat/lon are String in jsonv2 -- parse after deserialization. extratags flattened with extra_ prefix. PacingPolicy::from_seed(0,true) in test constructors. Adapter emits adapter_request span with URL=host+path only.
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit T-009, then begin T-010 (OSM/Overpass adapter).
+
 ## 2026-03-21 Status Snapshot 102
 
 - Timestamp: 2026-03-21

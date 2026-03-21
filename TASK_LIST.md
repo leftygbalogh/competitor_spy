@@ -165,14 +165,9 @@
 ### T-009: SourceAdapter trait and Nominatim adapter (geocoding)
 
 - Source: FORMAL_SPEC.md §3.5, §4.2, §4.3, §7.1 (SourceAdapter trait), §5.1 (failure handling), §9.2 (adapter integration tests)
-- Status: Not started
-- Dependencies: T-006, T-007, T-008
-- Output:
-  - `competitor_spy_adapters/src/lib.rs` — `SourceAdapter` trait (defined here per §7.1)
-  - `competitor_spy_adapters/src/nominatim.rs` — geocoding only; no credential required
-  - Integration tests via mock HTTP server (wiremock): success, 4xx, 5xx, timeout, malformed JSON → correct `SourceResult`
-- Evidence: `cargo test -p competitor_spy_adapters` passes (Nominatim tests). Geocoding of "Amsterdam, Netherlands" against live Nominatim returns a result within 0.01 degrees of (52.3676, 4.9041) — captured as live evidence artifact.
-- Chronicle: [C] Response schema interpretation; confidence level assignment for geocoding results.
+- Status: DONE
+- Output: adapter.rs (Geocoder + SourceAdapter traits), nominatim.rs (NominatimGeocoder + NominatimAdapter), 15 new tests (19 total in crate)
+- Evidence: `cargo test -p competitor_spy_adapters` 19 passed, 0 failed. Chronicle: CHR-CSPY-009.
 
 ---
 

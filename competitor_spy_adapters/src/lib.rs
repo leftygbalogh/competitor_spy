@@ -4,6 +4,7 @@
 // Depends on competitor_spy_domain for domain types. No rendering or credential
 // prompting logic here — credential retrieval is delegated to competitor_spy_credentials.
 
+pub mod adapter;
 pub mod pacing;
 pub mod registry;
 pub mod nominatim;

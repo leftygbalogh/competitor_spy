@@ -60,14 +60,14 @@
 ### T-002: Domain — BusinessProfile, DataPoint, Confidence, Competitor
 
 - Source: FORMAL_SPEC.md §3.2, §3.3, §4.4, §9.1 (domain::profile unit tests)
-- Status: Not started
+- Status: DONE — 2026-03-21
 - Dependencies: T-001
 - Output:
   - `competitor_spy_domain/src/profile.rs` — `BusinessProfile`, `DataPoint`, `Confidence`, `Competitor` types
   - Deduplication logic (within 50m + case-insensitive name match; merge priority: highest-confidence DataPoint per field)
   - Unit tests covering: normalization, deduplication, Absent DataPoint, merge priority
-- Evidence: `cargo test -p competitor_spy_domain` passes. Deduplication test: two records within 50m with the same name produce one merged Competitor.
-- Chronicle: [C] Field list, deduplication algorithm, merge priority rules.
+- Evidence: `cargo test -p competitor_spy_domain` — 30 passed, 0 failed. Deduplication test: two records within 50m with the same name produce one merged Competitor.
+- Chronicle: CHR-CSPY-002
 
 ---
 

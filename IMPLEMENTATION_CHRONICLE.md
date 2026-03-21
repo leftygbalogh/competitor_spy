@@ -120,7 +120,35 @@ Capture scripts (`capture_session.sh` and `capture_session.ps1`) write all stdou
 - Binary confirmed: `target\debug\competitor-spy.exe` (Test-Path = True).
 - All 6 crates: `cargo build --quiet` returns no warnings relevant to stub structure.
 - TASK_LIST.md: T-000 status = DONE, evidence-date = 2026-03-21.
+## Entry CHR-CSPY-002
 
+- Task: T-002
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md §3.2 (Competitor, BusinessProfile), §3.3 (DataPoint, Confidence), §4.4 (normalization, deduplication), U-002 (40% completeness threshold = 4 of 10 fields)
+
+### Decision: BusinessProfile has exactly 10 named fields
+
+Fields: `name, address, phone, website, categories, opening_hours, email, description, rating_text, review_count_text`. This satisfies U-002 ("~10 defined fields" — threshold is 40% = 4 of 10 non-Absent).
+
+Every field is always a `DataPoint`; absent data is `DataPoint::absent(field_name)` with `Confidence::Absent`. No Option<DataPoint> anywhere in the model. This eliminates null-checks downstream and matches the spec requirement "No null values in the domain model."
+
+### Decision: Confidence ordering by declaration (Absent < Low < Medium < High)
+
+`Confidence` derives `PartialOrd + Ord` from declaration order. This makes merge priority a one-liner: `if incoming.confidence > base.confidence { *base = incoming }`. Equal confidence keeps the existing (base) DataPoint — first source wins on ties.
+
+### Decision: Haversine formula for 50m deduplication
+
+Coordinates are WGS-84 lat/lon. Haversine with Earth radius 6,371,000m provides accurate distance at all latitudes. The 50m threshold is exact — no approximation. Using Euclidean deg-to-m conversion was rejected: error grows at high latitudes.
+
+### Decision: O(n²) deduplication — acceptable for bounded n
+
+The deduplication loop is O(n²) over competitors. The maximum practical n is bounded by what the 4 adapters return (hundreds, not thousands). An indexed approach (geohash buckets) adds complexity not justified for v1.
+
+### Evidence
+
+- `cargo test -p competitor_spy_domain` — 30 passed, 0 failed (includes 18 new profile tests + 12 from T-001).
+- haversine test: 0.0004° lat ≈ 44m (< 50) confirmed; 0.001° lat ≈ 111m (> 50) confirmed.
+- Deduplication merge test: two Iron Temple records at 52.0000/52.0001, phone Low vs High → result has phone "+31-high" (High confidence wins).
 ## Entry CHR-CSPY-001
 
 - Task: T-001

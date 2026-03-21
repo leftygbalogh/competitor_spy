@@ -1105,9 +1105,18 @@ Next step: None pending.
 - Decisions made: Workspace-level dependency pinning; resolver=2; domain crate is zero-I/O zero-async enforced by dep graph; CSPY_STATE_LOG env-var pattern for capture scripts.
 - Open questions: None.
 - Blockers: None.
-- Next step: Commit T-000, then T-001 (TDD — failing tests first for SearchQuery/Location/Radius).
+- Next step: Commit T-001, then begin T-002 (BusinessProfile, DataPoint, Confidence, Competitor).
 
-## 2026-03-21 Status Snapshot 098
+## 2026-03-21 Status Snapshot 099
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 4 — Build (T-002 DONE)
+- Completed since last update: T-002 complete. TDD cycle: 18 profile tests written (RED — all panicked), then Confidence/DataPoint/BusinessProfile(10 fields)/Competitor/deduplicate/haversine implemented (GREEN — 30 total passed). Chronicle CHR-CSPY-002 written.
+- In progress: T-002 commit; then T-003.
+- Decisions made: BusinessProfile has exactly 10 fields (satisfies U-002 40%=4 of 10). Confidence ordering Absent<Low<Medium<High via declaration order. Haversine formula for 50m dedup. O(n²) dedup (acceptable for bounded n). DataPoint::absent() stores empty source_id (no null).
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit T-002, then begin T-003 (SearchRun aggregate + RunStatus state machine).
 
 - Timestamp: 2026-03-21
 - Current stage: Stage 4 — Build (T-001 DONE)

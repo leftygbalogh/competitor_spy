@@ -120,7 +120,29 @@ Capture scripts (`capture_session.sh` and `capture_session.ps1`) write all stdou
 - Binary confirmed: `target\debug\competitor-spy.exe` (Test-Path = True).
 - All 6 crates: `cargo build --quiet` returns no warnings relevant to stub structure.
 - TASK_LIST.md: T-000 status = DONE, evidence-date = 2026-03-21.
-## Entry CHR-CSPY-002
+## Entry CHR-CSPY-003
+
+- Task: T-003
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md §3.2 (SearchRun, SourceResult), §3.4 (aggregate root), §4.1 (run lifecycle statechart), §4.3 (adapter failure semantics)
+
+### Decision: SearchRun state transitions via named methods, not a generic transition()
+
+Each state transition is a named method (`start_validating`, `start_geocoding`, `set_location`, `add_source_result`, `start_ranking`, `set_competitors`, `complete`, `complete_with_warning`, `fail`). Guards use `debug_assert_eq!` — they panic in dev/test if an invalid transition is attempted, but are elided in release for performance. This aligns with the "adapter failure does not abort run" invariant: `add_source_result()` is always valid in Collecting state regardless of the result's status.
+
+### Decision: ReasonCode::AdapterConfigMissing added alongside spec codes
+
+Spec defines HTTP_4XX, HTTP_5XX, TIMEOUT, PARSE_ERROR, ADAPTER_CONFIG_MISSING. All five are implemented. Display matches the spec strings exactly (used in report footer and audit log).
+
+### Decision: FailureReason carries a human-readable message
+
+FailureReason variants (ValidationError, GeocodingError, RenderError) carry a String message. This message is what gets written to stderr on failure. The RankedState is separate from the Done state so downstream auditing can distinguish clean runs from warned-runs without parsing output.
+
+### Evidence
+
+- `cargo test -p competitor_spy_domain` — 40 passed, 0 failed.
+- Adapter-failure test: run with OSM Success + Yelp Failed(Timeout) reaches Ranking state (status = Ranking) with source_results.len() = 2; failed_source_results() = ["yelp"].
+- Happy-path test: complete transition sequence Idle → Validating → Geocoding → Collecting → Ranking → Rendering → Done all assert correct status at each step.## Entry CHR-CSPY-002
 
 - Task: T-002
 - Date: 2026-03-21

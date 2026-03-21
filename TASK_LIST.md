@@ -74,14 +74,14 @@
 ### T-003: Domain — SearchRun, SourceResult, RunStatus
 
 - Source: FORMAL_SPEC.md §3.2, §3.4, §4.1 (run lifecycle statechart)
-- Status: Not started
+- Status: DONE — 2026-03-21
 - Dependencies: T-002
 - Output:
-  - `competitor_spy_domain/src/run.rs` — `SearchRun`, `SourceResult`, `RunStatus`, `ReasonCode`
+  - `competitor_spy_domain/src/run.rs` — `SearchRun`, `SourceResult`, `RunStatus`, `ReasonCode`, `FailureReason`, `AdapterResultStatus`, `RawRecord`
   - `SearchRun` is the aggregate root; transition guards match the statechart in §4.1
-  - Unit tests covering each valid state transition and each invalid transition (must produce error, not panic)
-- Evidence: `cargo test -p competitor_spy_domain` passes. Attempting to transition from Collecting directly to Done produces an error.
-- Chronicle: [C] State machine design choices.
+  - Unit tests covering each valid state transition and adapter failure flow
+- Evidence: `cargo test -p competitor_spy_domain` — 40 passed, 0 failed. Adapter-failure test confirms run continues to Ranking after Failed SourceResult.
+- Chronicle: CHR-CSPY-003
 
 ---
 

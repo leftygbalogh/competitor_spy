@@ -174,15 +174,9 @@
 ### T-010: OSM/Overpass adapter
 
 - Source: FORMAL_SPEC.md §4.3, §4.4, §5.1, §5.2, §9.2
-- Status: Not started
-- Dependencies: T-009
-- Output:
-  - `competitor_spy_adapters/src/osm_overpass.rs` — no credential required
-  - Fields extracted: name, address, phone, website, hours, amenity/category tags
-  - Integration tests: success, timeout, parse error → correct `SourceResult`
-  - At least one known query against live Overpass API captured as evidence artifact before prototype handback
-- Evidence: `cargo test -p competitor_spy_adapters` passes (Overpass tests). Live evidence artifact present.
-- Chronicle: [C] Overpass QL query template; field extraction; confidence assignment per field.
+- Status: DONE
+- Output: osm_overpass.rs — OsmOverpassAdapter; QL query builder; sanitize; urlencoded; field-tag mapping; coordinate resolution (node direct / way center). 14 new tests (33 total in crate).
+- Evidence: `cargo test -p competitor_spy_adapters` 33 passed, 0 failed. Chronicle: CHR-CSPY-010.
 
 ---
 

@@ -339,3 +339,37 @@ PacingPolicy::from_seed(0, true) used in with_client() test constructors (zero_d
 
 cargo test -p competitor_spy_adapters -- 19 passed, 0 failed.
 Tests cover geocoding success, multiple candidates (first selected), no results, HTTP 4xx, HTTP 5xx, parse error on bad lat; adapter: adapter_id, requires_credential, records on success (2 records), zero-record success, HTTP 4xx fail, HTTP 5xx fail, parse error fail, adapter_id tag on record, credential arg ignored.
+
+## Entry CHR-CSPY-010
+
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md section 4.3, section 4.4, section 5.1, section 5.2
+
+### Overpass QL query template
+
+POST /interpreter with body: data=<url-encoded QL>. Query uses [out:json][timeout:25]; union of node/way/relation with name~"<keyword>",i (case-insensitive) within around:<radius_m>,<lat>,<lon>; out body center qt;
+QL injection prevention: sanitize_ql_string() strips all chars except alphanumeric, space, -, _. Overpass QL special chars ([]{}<>=;,~) are stripped.
+
+### Field extraction and OSM tag mapping (RECONSTRUCTION-CRITICAL)
+
+OSM tag -> RawRecord field mapping:
+  name -> name
+  phone / contact:phone -> phone (first wins)
+  website / contact:website / url -> website (first wins)
+  addr:street -> address_street
+  addr:housenumber -> address_housenumber
+  addr:city -> address_city
+  addr:postcode -> address_postcode
+  amenity / shop / leisure / tourism / office -> category (first wins) + verbatim key
+  opening_hours -> opening_hours
+  all other tags -> tag_<key>
+Coordinate resolution: nodes use lat/lon directly; ways/relations use center.lat/center.lon. Elements with no coordinates are skipped.
+
+### URL encoding
+
+Custom inline urlencoded() function: RFC 3986 unreserved chars pass through; space -> +; all others percent-encoded as %XX. No extra crate dependency.
+
+### Evidence
+
+cargo test -p competitor_spy_adapters -- 33 passed, 0 failed.
+Tests: adapter_id, requires_credential, records on success (2 nodes), phone/website extracted, adapter_id tag, empty elements = success 0 records, skips elements without coords, uses way center coords, HTTP 4xx fail, HTTP 5xx fail, parse error fail, sanitize_ql_string, urlencoded, build_overpass_query.

@@ -32,6 +32,7 @@ At session start in projects using this template:
 - Do not take independent scope-expanding actions.
 - Routine remit tasks can proceed without explicit permission.
 - Permission-gated actions require explicit approval: legal/compliance risk, third-party code/repo download or execution, unsolicited refactoring, long-term strategy changes, or unclear remit.
+- Before any push operation, run `git remote -v` and explicitly confirm which remote and branch should receive the push; if uncertain, ask and wait for confirmation.
 - When governance values conflict, present the tradeoff briefly and recommend one path; the user may accept or redirect.
 - When blocked, report: blocker, impact, what was attempted, and the smallest user decision or input needed.
 
@@ -60,6 +61,7 @@ For projects initialized from this template:
 - Use simple manual versioning and short changelog updates for the master template.
 - Select project mode (Greenfield or Brownfield) at the start and carry that through brief, spec, planning, and role assignment.
 - Ask project mode as the first discovery question before asking any project-domain requirement details.
+- For template-clone projects, verify repository identity immediately after clone (`git remote -v`) and repoint `origin` before any publish if needed.
 - Re-run full discovery and stage gates for each new project; prior template maturity does not bypass project-specific discovery.
 - Create and approve project brief before formal specification.
 - Create and approve formal specification before task planning.

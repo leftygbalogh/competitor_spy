@@ -251,6 +251,8 @@ Definition of done:
 - For interactive CLI projects, runbook includes how to execute capture helpers and where captured session artifacts are stored for post-failure diagnosis.
 - For interactive CLI projects, runbook includes a Known Environment Gaps section for unvalidated terminal/shell combinations, with risk notes and post-release validation steps.
 - Security and production-readiness loop is complete: identified security/ops risks are converted into mitigation tasks, reflected in specs/runbooks, verified with evidence, and closed before release approval.
+- Repository identity gate is complete before any publish command: remotes are listed, intended push target is explicitly confirmed, and proof is stored in `docs/evidence/release-remote-proof.md`.
+- If multiple remotes exist (or template-clone ancestry makes target uncertain), release remains blocked until owner or delegated approver confirms the exact remote and branch.
 
 ## Official Iterative Hardening Loops
 
@@ -283,6 +285,7 @@ Quality pack activation:
 - Any role may raise a DoR or DoD violation; it must be resolved before work continues.
 - After stage completion is approved, save and create a stage-completion commit before any next-stage work begins.
 - If transition is denied, the denial reason must be logged in `memory.md` and the active stage artifact.
+- Before any push in Stage 6, publish target must be restated explicitly in release notes or checklist evidence; default-origin assumptions are not allowed.
 - At every stage gate closure, any participant may append a proposal to the project `feedback.json` file (one entry per proposal) suggesting an addition, modification, or removal to any template document applicable to their current stage or any prior stage. Proposals are reviewed at the gate before the next stage begins. No template document is changed until the decision owner explicitly approves. Approved proposals are fed back into the master template before the next project begins.
 - Stage gate approval authority follows project brief delegation settings for each stage; delegated approvers are authoritative within their assigned stage range.
 - Once a stage is approved, agents may autonomously resolve intra-stage details through role debate and conflict-resolution rules, without requiring owner approval for each micro-decision.

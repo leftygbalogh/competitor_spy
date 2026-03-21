@@ -27,6 +27,7 @@ Purpose: define what an industrial-grade software delivery should include beyond
 | API contract docs | docs/api/ | external or internal API surface |
 | API usage guide | docs/api/guide.md | annotated API guide with worked examples for integrators |
 | Traceability report (FR/NFR -> tests/evidence) | docs/evidence/traceability.md | regulated/high-assurance projects |
+| Release remote proof snapshot | docs/evidence/release-remote-proof.md | prevents template or wrong-repository pushes by recording verified publish target |
 | Security review report | docs/security/ | security-sensitive or public deployment |
 | Threat model | docs/security/threat-model.md | internet-facing or sensitive data scope |
 | Performance benchmark report | docs/perf/ | latency/throughput constraints |

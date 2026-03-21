@@ -20,6 +20,16 @@ Use this governance template as the active policy and workflow layer for a new s
    - explicit approval required
    - stage-completion commit required
 
+## Repository Identity Setup (Mandatory)
+
+1. Immediately after cloning a project from this template, run `git remote -v`.
+2. Confirm the intended application repository URL for fetch and push.
+3. If `origin` still points to the template repository, repoint it before any branch work:
+   - `git remote set-url origin <application-repository-url>`
+4. Record this verification in release evidence before first publish.
+
+No push is allowed until repository identity is explicitly verified.
+
 ## Linux Compliance Setup
 
 1. Ensure `.gitattributes` enforces LF (`* text=auto eol=lf`).

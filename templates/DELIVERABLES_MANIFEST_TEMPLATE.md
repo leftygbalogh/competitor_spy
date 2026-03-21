@@ -23,6 +23,7 @@
 - API contract docs
 - docs/api/guide.md (API usage guide with worked examples)
 - Traceability report
+- docs/evidence/release-remote-proof.md (release remote proof snapshot)
 - Security review report
 - Threat model
 - Performance benchmark report

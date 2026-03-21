@@ -17,6 +17,9 @@
 - [x] Leaderboard contract implemented: `leaderboard.csv`
 - [x] Governance artifacts updated for stages 1-6
 - [x] Agent feedback file updated
+- [ ] Push target verified immediately before publish: `git remote -v` captured in evidence
+- [ ] Intended remote and branch explicitly stated and approved before push
+- [ ] Release remote proof snapshot saved: `docs/evidence/release-remote-proof.md`
 
 ## Stage 5 Approval
 

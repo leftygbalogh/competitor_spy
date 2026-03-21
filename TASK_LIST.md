@@ -27,7 +27,7 @@
 ### T-000: Project skeleton and capture scripts
 
 - Source: FORMAL_SPEC.md §7.1 (layered architecture), §9.5 (CLI diagnostics scripts)
-- Status: Not started
+- Status: **DONE — 2026-03-21**
 - Output:
   - `Cargo.toml` (workspace root, members declared)
   - `competitor_spy_domain/Cargo.toml` + `src/lib.rs`
@@ -39,8 +39,8 @@
   - `scripts/capture_session.sh` (Linux/Bash)
   - `scripts/capture_session.ps1` (Windows/PowerShell)
   - `docs/evidence/sessions/.gitkeep`
-- Evidence: `cargo build` succeeds with zero errors and zero warnings on a clean checkout. Both capture scripts run without error on their respective platforms.
-- Chronicle: [C] Architecture decisions, crate dependency graph, capture script behavior.
+- Evidence: `cargo build` succeeded; `target\debug\competitor-spy.exe` present. Zero errors, zero warnings.
+- Chronicle: See IMPLEMENTATION_CHRONICLE.md — T-000
 
 ---
 

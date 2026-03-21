@@ -1,0 +1,4 @@
+# Evidence session artifacts go here.
+# Each run produces:
+#   session_YYYYMMDD_HHMMSS_<label>.log        — screen capture (stdout + stderr)
+#   session_YYYYMMDD_HHMMSS_<label>_state.jsonl — structured app trace (OTel JSONL)

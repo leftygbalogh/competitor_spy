@@ -1,7 +1,7 @@
 {
   "$schema": "feedback-schema-v1",
-  "description": "Project stage-by-stage process feedback; no template changes apply until explicitly approved by project lead.",
-  "project_id": "[insert-project-id-here]",
+  "description": "Snake project stage-by-stage process feedback; no template changes apply until explicitly approved by Lefty.",
+  "project_id": "python-terminal-snake-game-2026-03-20",
   "entries": [
     {
       "stage": 1,
@@ -10,7 +10,7 @@
       "subsection": "Project Overview",
       "change_type": "modify",
       "before": "Generic governance template context",
-      "after": "Strict-scope project brief with explicit in/out boundaries",
+      "after": "Strict-scope Snake brief with explicit in/out boundaries",
       "reasoning": "Early explicit no-scope-creep wording reduced rework during build."
     },
     {
@@ -20,8 +20,8 @@
       "subsection": "Risks",
       "change_type": "add",
       "before": null,
-      "after": "Platform compatibility risk explicitly listed",
-      "reasoning": "Platform differences were a real delivery blocker; surfacing this in discovery was valuable."
+      "after": "Terminal compatibility risk explicitly listed",
+      "reasoning": "Host-terminal differences were a real delivery blocker; surfacing this in discovery was valuable."
     },
     {
       "stage": 2,
@@ -31,7 +31,7 @@
       "change_type": "modify",
       "before": "High-level requirement bullets",
       "after": "Explicit pre/post/error contracts and decision tables",
-      "reasoning": "Reduced ambiguity around error handling and policy enforcement."
+      "reasoning": "Reduced ambiguity around resize failures and leaderboard write policy."
     },
     {
       "stage": 2,
@@ -40,7 +40,7 @@
       "subsection": "Traceability Seed",
       "change_type": "add",
       "before": null,
-      "after": "Requirement-to-task traceability rows",
+      "after": "FR-to-task traceability rows",
       "reasoning": "Improved auditability and smoother stage-5 verification."
     },
     {
@@ -49,15 +49,15 @@
       "doc": "TASK_LIST.md",
       "subsection": "Backlog",
       "change_type": "modify",
-      "before": "Task list without initial task and chronicle links",
-      "after": "Task list with initial task first and one chronicle ID per task",
+      "before": "Task list without T-000 and chronicle links",
+      "after": "Task list with T-000 first and one chronicle ID per task",
       "reasoning": "Made build accountability explicit before coding restarted."
     },
     {
       "stage": 4,
       "role": "tdd-driver",
       "doc": "IMPLEMENTATION_CHRONICLE.md",
-      "subsection": "Implementation Chronicle Entries",
+      "subsection": "CHR-SNK-001..008",
       "change_type": "add",
       "before": null,
       "after": "Per-task implementation decisions with evidence references",
@@ -65,13 +65,13 @@
     },
     {
       "stage": 4,
-      "role": "cli-specialist-variant",
-      "doc": "[main implementation file]",
-      "subsection": "runtime loop and input handling",
+      "role": "python-cli-specialist",
+      "doc": "snake.py",
+      "subsection": "runtime loop and key handling",
       "change_type": "modify",
-      "before": "Mixed platform strategies",
-      "after": "Unified runtime with cross-platform dependency path",
-      "reasoning": "Most stable approach across supported environments."
+      "before": "Mixed terminal strategies",
+      "after": "Curses-first runtime with windows-curses dependency path",
+      "reasoning": "Most stable approach across PowerShell and Git Bash (with winpty launcher)."
     },
     {
       "stage": 5,
@@ -80,17 +80,17 @@
       "subsection": "Stage 5 Verify Results",
       "change_type": "add",
       "before": null,
-      "after": "Explicit verification checklist aligned with requirements",
+      "after": "Explicit verification checklist aligned with FR/NFR",
       "reasoning": "Made pass/fail criteria visible and reviewable."
     },
     {
       "stage": 5,
       "role": "readability-reviewer",
-      "doc": "[main implementation file]",
-      "subsection": "output rendering",
+      "doc": "snake.py",
+      "subsection": "segment rendering",
       "change_type": "modify",
-      "before": "Output mapping causing rendering artifact",
-      "after": "Anchored mapping with improved output expansion",
+      "before": "Tail-to-neck mapping causing head-adjacent growth artifact",
+      "after": "Anchored neck/tail mapping with O-body expansion",
       "reasoning": "Improved readability and expected visual behavior."
     },
     {

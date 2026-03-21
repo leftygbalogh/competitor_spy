@@ -1,0 +1,63 @@
+[workspace]
+resolver = "2"
+members = [
+    "competitor_spy_domain",
+    "competitor_spy_adapters",
+    "competitor_spy_output",
+    "competitor_spy_credentials",
+    "competitor_spy_telemetry",
+    "competitor_spy_cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Competitor Spy Project"]
+license = "MIT"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Async trait support
+async-trait = "0.1"
+
+# UUID generation
+uuid = { version = "1", features = ["v4"] }
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# PDF generation (pure Rust)
+printpdf = "0.7"
+
+# Credential encryption
+age = { version = "0.10", features = ["armor"] }
+
+# OpenTelemetry
+opentelemetry = { version = "0.27" }
+opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"] }
+opentelemetry-stdout = { version = "0.27" }
+tracing = "0.1"
+tracing-opentelemetry = "0.28"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# CLI argument parsing
+clap = { version = "4", features = ["derive"] }
+
+# Mock HTTP server for tests
+wiremock = "0.6"
+
+# Logging
+log = "0.4"

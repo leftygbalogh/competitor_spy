@@ -69,3 +69,54 @@
 - Approved by: Team Lead Agent (delegated)
 - Approval date: 2026-03-20
 - Notes: Build complete with chronicle links for all tasks.
+
+---
+
+# Competitor Spy Implementation Chronicle
+
+## Entry CHR-CSPY-000
+
+- Task: T-000
+- Date: 2026-03-21
+- Requirement: CSPY-PLAN-001
+- Spec ref: FORMAL_SPEC.md §Q3-ARCH-01 (layered architecture)
+
+### Decision: 6-crate workspace with compiler-enforced layer isolation
+
+All 6 roles (domain, adapters, output, credentials, telemetry, cli) are separate Cargo crates in a single workspace. The dependency graph is:
+
+```
+competitor_spy_domain          (no I/O, no async, no rendering deps)
+  ↑
+competitor_spy_adapters        (async HTTP; depends on domain)
+competitor_spy_credentials     (sync file I/O; depends on nothing except age/serde)
+competitor_spy_telemetry       (async OTel; depends on nothing domain-specific)
+competitor_spy_output          (sync rendering; depends on domain)
+  ↑
+competitor_spy_cli             (entry point; depends on all 5 above)
+```
+
+Why separate crates: If domain accidentally imports tokio or reqwest, the compiler rejects it. No lint rule or code-review custom needed — the dep graph is the enforcement. Adapter crates cannot import output or credentials, enforced by the same mechanism.
+
+### Decision: resolver = "2" and workspace-level dependency pinning
+
+`[workspace.dependencies]` declares every shared version once. All crate `Cargo.toml` files use `{ workspace = true }` to inherit. This prevents version drift between crates and makes audits and upgrades a single-location change.
+
+Key pins:
+- tokio 1, features = full (gives all runtime primitives; trimmed in specific crates if needed)
+- reqwest 0.12, no-default-features, features = [json, rustls-tls] (avoids openssl C dep on Windows)
+- age 0.10 (passphrase-based encryption for credential store)
+- opentelemetry 0.27 + tracing-opentelemetry 0.28 (compatible pair; OTel 0.x API stability)
+- clap 4, features = [derive] (ergonomic CLI; derive macro means no manual arg builder)
+- wiremock 0.6 (dev-only; HTTP mock server for adapter tests)
+
+### Decision: CSPY_STATE_LOG env-var pattern for capture scripts
+
+Capture scripts (`capture_session.sh` and `capture_session.ps1`) write all stdout + stderr to a session log file at path given by env var `CSPY_STATE_LOG`. If the var is not set, a default timestamped path is constructed. Output is simultaneously teed to the terminal. The binary is invoked with `--log-level trace` to ensure maximum diagnostic data. Exit code is propagated faithfully (PIPESTATUS on bash; `$process.ExitCode` on PS).
+
+### Evidence
+
+- `cargo build` output: 335+ packages downloaded, all 6 crates compiled, zero errors.
+- Binary confirmed: `target\debug\competitor-spy.exe` (Test-Path = True).
+- All 6 crates: `cargo build --quiet` returns no warnings relevant to stub structure.
+- TASK_LIST.md: T-000 status = DONE, evidence-date = 2026-03-21.

@@ -1,0 +1,22 @@
+[package]
+name = "competitor_spy_cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "competitor-spy"
+path = "src/main.rs"
+
+[dependencies]
+competitor_spy_domain = { path = "../competitor_spy_domain" }
+competitor_spy_adapters = { path = "../competitor_spy_adapters" }
+competitor_spy_output = { path = "../competitor_spy_output" }
+competitor_spy_credentials = { path = "../competitor_spy_credentials" }
+competitor_spy_telemetry = { path = "../competitor_spy_telemetry" }
+clap = { workspace = true }
+tokio = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+log = { workspace = true }

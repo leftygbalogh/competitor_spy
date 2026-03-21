@@ -1095,3 +1095,14 @@ Next step: None pending.
 - Open questions: None.
 - Blockers: None.
 - Next step: Stage 3 commit, then begin T-000 (project skeleton).
+
+## 2026-03-21 Status Snapshot 097
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 4 — Build (T-000 DONE)
+- Completed since last update: T-000 complete. Cargo workspace created (resolver=2, 6 crates). All 6 Cargo.toml files + src/lib.rs (or main.rs) written. All stub modules created (5 domain, 6 adapter, 2 output, 1 credentials, 2 telemetry, 1 CLI main.rs). capture_session.sh and capture_session.ps1 written. docs/evidence/sessions/.gitkeep created. `cargo build` confirmed clean — 335+ crates downloaded, all 6 compiled, binary target\debug\competitor-spy.exe confirmed present. TASK_LIST.md updated: T-000 DONE.
+- In progress: Committing T-000; then begin T-001.
+- Decisions made: Workspace-level dependency pinning; resolver=2; domain crate is zero-I/O zero-async enforced by dep graph; CSPY_STATE_LOG env-var pattern for capture scripts.
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit T-000, then T-001 (TDD — failing tests first for SearchQuery/Location/Radius).

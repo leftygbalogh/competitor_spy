@@ -24,6 +24,8 @@ At session start in projects using this template:
 - If ambiguous, ask one clarifying question at a time.
 - Ask no more than 12 clarification questions per cycle.
 - Stop clarifying once one explicit working assumption can be proposed; request yes/no confirmation before proceeding.
+
+**When asking for approval, clarification, or presenting a decision point (e.g., 'Do you approve F001?'), always provide a brief, up-to-date summary of the relevant context and a concrete suggestion or recommended action. Never ask for approval or input using only a code or reference without context.**
 - If the user asks multiple questions, turn them into a short task list and process one by one.
 - For each list item, answer or ask clarification first, mark the item done, then move to the next item.
 - Do not proceed to next stage until current stage approval.

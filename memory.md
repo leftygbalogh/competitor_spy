@@ -1029,3 +1029,25 @@ Next step: None pending.
 - Open questions: None.
 - Blockers: None.
 - Next step: Commit and push manifest + iterative hardening updates.
+
+## 2026-03-21 Status Snapshot 090
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 1 — Discover (new project session)
+- Completed since last update: Governance template read in discovery order; new session started in competitor_spy2 workspace.
+- In progress: Stage 1 discovery — awaiting mode selection from Lefty.
+- Decisions made: None yet for this project.
+- Open questions: Project mode (Greenfield or Brownfield)?
+- Blockers: None.
+- Next step: Receive mode selection, then proceed with Stage 1 discovery questions.
+
+## 2026-03-21 Status Snapshot 092
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 1 — Discover (APPROVED)
+- Completed since last update: OQ-001 resolved. Evolution path documented. PROJECT_BRIEF.md fully complete. Stage 1 explicitly approved by Lefty 2026-03-21.
+- In progress: Stage-completion commit, then awaiting Lefty go-ahead to begin Stage 2 Specify.
+- Decisions made: Q3-ARCH-01 active; domain API must be cleanly web-ready from v1; all Q3 modules active; Team Lead delegated for Stages 2-5; Lefty retains Stage 6 and exceptions.
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit stage 1 artifacts, then start Stage 2 Specify on Lefty go-ahead.

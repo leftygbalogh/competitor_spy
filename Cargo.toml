@@ -59,5 +59,8 @@ clap = { version = "4", features = ["derive"] }
 # Mock HTTP server for tests
 wiremock = "0.6"
 
+# Random number generation (pacing policy; seeded determinism in tests)
+rand = { version = "0.8", features = ["small_rng"] }
+
 # Logging
 log = "0.4"

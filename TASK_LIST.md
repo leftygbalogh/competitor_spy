@@ -119,7 +119,7 @@
 ### T-006: PacingPolicy
 
 - Source: FORMAL_SPEC.md §4.8, §5.5, §9.1 (PacingPolicy unit tests), §9.7 (pacing determinism)
-- Status: Not started
+- Status: DONE — 2026-03-21 — commit pending (CHR-CSPY-006; seed=42 → [8,8,13]s)
 - Dependencies: T-000
 - Output:
   - `competitor_spy_adapters/src/pacing.rs` (or shared crate location TBD in chronicle) — `PacingPolicy`

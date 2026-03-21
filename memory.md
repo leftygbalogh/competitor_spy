@@ -1107,6 +1107,17 @@ Next step: None pending.
 - Blockers: None.
 - Next step: Commit T-001, then begin T-002 (BusinessProfile, DataPoint, Confidence, Competitor).
 
+## 2026-03-21 Status Snapshot 100
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 4 — Build (T-006 DONE)
+- Completed since last update: T-003 (SearchRun/RunStatus — 40 tests green), T-004 (ScoringStrategy/DefaultScoringStrategy — 51 tests), T-005 (RankingEngine/DefaultRankingEngine — 59 tests), T-006 (PacingPolicy — 4 adapters tests green). Commits: ed56c16 (T-003), 902d507 (T-004), 8226b70 (T-005). T-006 commit pending.
+- In progress: T-006 commit.
+- Decisions made: SmallRng (rand 0.8 / Xoshiro256++) for PacingPolicy. seed=42 → [8,8,13]s (RECONSTRUCTION-CRITICAL). zero_delay flag bypasses sleep without affecting RNG. Range [5,15]s inclusive.
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit T-006, then begin T-007 (CredentialStore with age encryption, in competitor_spy_credentials/src/store.rs).
+
 ## 2026-03-21 Status Snapshot 099
 
 - Timestamp: 2026-03-21

@@ -134,7 +134,7 @@
 ### T-007: Credential store
 
 - Source: FORMAL_SPEC.md §3.2, §4.7, §5.4, §6.4, §9.1, §9.2 (credential integration tests)
-- Status: Not started
+- Status: DONE -- 2026-03-21 -- commit pending (CHR-CSPY-007; 17 tests green)
 - Dependencies: T-000
 - Output:
   - `competitor_spy_credentials/src/lib.rs` — `CredentialStore`: store / retrieve / delete, `age`-encrypted, per adapter_id

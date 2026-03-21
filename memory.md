@@ -1107,6 +1107,17 @@ Next step: None pending.
 - Blockers: None.
 - Next step: Commit T-001, then begin T-002 (BusinessProfile, DataPoint, Confidence, Competitor).
 
+## 2026-03-21 Status Snapshot 101
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 4 -- Build (T-007 DONE)
+- Completed since last update: T-007 complete. CredentialStore with age 0.10.1 passphrase-based encryption, SecretValue zero-on-drop, per-credential JSON storage. 17 tests green.
+- In progress: T-007 commit; then T-008.
+- Decisions made: per-credential age scrypt encryption (not whole-file). SecretValue zeroes on drop via manual Drop. inline base64 (no extra dep). File read-on-open, write-on-mutation.
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit T-007, then begin T-008 (telemetry init + secret redaction filter).
+
 ## 2026-03-21 Status Snapshot 100
 
 - Timestamp: 2026-03-21

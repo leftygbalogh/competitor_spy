@@ -94,9 +94,10 @@
   - `competitor_spy_domain/src/scoring.rs` — `ScoringStrategy` trait + `DefaultScoringStrategy`
   - `keyword_score`: token overlap between competitor categories and query industry keywords, normalised to [0.0, 1.0]
   - `visibility_score`: composite of review count (if present) and profile completeness (fields-present / total-defined)
-  - Unit tests at 0.0, 1.0, and a midpoint with known inputs
-- Evidence: `cargo test -p competitor_spy_domain` passes. Known-input tests reproduce expected scores to at least 4 decimal places.
-- Chronicle: [C] Exact token-overlap formula for keyword_score; exact completeness formula for visibility_score. RECONSTRUCTION-CRITICAL.
+  - Unit tests at 0.0, 1.0, and midpoints with known inputs
+- Status: DONE — 2026-03-21
+- Evidence: `cargo test -p competitor_spy_domain` — 51 passed. Known-input tests reproduce scores exactly. See CHR-CSPY-004 for algorithm specification.
+- Chronicle: CHR-CSPY-004
 
 ---
 

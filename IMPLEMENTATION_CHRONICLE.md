@@ -120,7 +120,60 @@ Capture scripts (`capture_session.sh` and `capture_session.ps1`) write all stdou
 - Binary confirmed: `target\debug\competitor-spy.exe` (Test-Path = True).
 - All 6 crates: `cargo build --quiet` returns no warnings relevant to stub structure.
 - TASK_LIST.md: T-000 status = DONE, evidence-date = 2026-03-21.
-## Entry CHR-CSPY-003
+## Entry CHR-CSPY-004  [RECONSTRUCTION-CRITICAL]
+
+- Task: T-004
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md §3.5 (ScoringStrategy), §4.5 (scoring algorithms must be deterministic and chronicled)
+
+### keyword_score algorithm (EXACT — used in ranking and reports)
+
+```
+query_tokens = whitespace_split(query.industry.to_lowercase())
+if query_tokens.is_empty() → return 0.0
+categories_text = profile.categories.value.as_deref().unwrap_or("").to_lowercase()
+matched = |{ t in query_tokens : categories_text.contains(t) }|
+score = matched / len(query_tokens)  ∈ [0.0, 1.0]
+```
+
+This is a substring-containment token overlap (not full-word boundary matching). Token "yoga" matches "yoga" or "yoga-studio" or "iyoga". Boundary-matching was considered but rejected: source tags are free-form and substring matching is more forgiving.
+
+### visibility_score algorithm (EXACT — used in ranking and reports)
+
+```
+completeness = profile.completeness()  // non-Absent fields / 10
+
+if profile.review_count_text.confidence == Absent:
+    return completeness  // No review data; use completeness alone
+
+review_count = parse_f64(profile.review_count_text.value).unwrap_or(0).max(0)
+review_score = min(review_count / 200.0, 1.0)  // saturates at 200 reviews
+
+visibility = min(0.5 * completeness + 0.5 * review_score, 1.0)
+```
+
+The 200-review saturation cap was chosen to normalise typical SMB review ranges (0–200) without artificially inflating large chains. This value is an implementation decision and may be revisited in v2.
+
+### Known test vectors (for cross-check)
+
+| Industry | Categories | keyword_score |
+|---|---|---|
+| "yoga studio" | "yoga studio pilates" | 1.0 |
+| "yoga studio" | "yoga pilates" | 0.5 |
+| "yoga studio" | "restaurant bar" | 0.0 |
+| "yoga studio" | Absent | 0.0 |
+
+| completeness | review_count | visibility_score |
+|---|---|---|
+| 0.0 | Absent | 0.0 |
+| 0.9 | Absent | 0.9 |
+| 1.0 | 200 | 1.0 |
+| 0.1 | 100 | 0.30 |
+
+### Evidence
+
+- `cargo test -p competitor_spy_domain` — 51 passed, 0 failed.
+- All known-vector tests pass with tolerance < 1e-9.## Entry CHR-CSPY-003
 
 - Task: T-003
 - Date: 2026-03-21

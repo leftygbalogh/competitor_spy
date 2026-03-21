@@ -373,3 +373,28 @@ Custom inline urlencoded() function: RFC 3986 unreserved chars pass through; spa
 
 cargo test -p competitor_spy_adapters -- 33 passed, 0 failed.
 Tests: adapter_id, requires_credential, records on success (2 nodes), phone/website extracted, adapter_id tag, empty elements = success 0 records, skips elements without coords, uses way center coords, HTTP 4xx fail, HTTP 5xx fail, parse error fail, sanitize_ql_string, urlencoded, build_overpass_query.
+
+## Entry CHR-CSPY-011
+
+- Task: T-011
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md section 4.3, section 4.4, section 4.7 (credential management), section 5.1
+
+### Yelp Fusion API endpoint and auth (RECONSTRUCTION-CRITICAL)
+
+GET /v3/businesses/search with Authorization: Bearer <api_key>.
+Parameters: term=<industry>, latitude, longitude, radius (metres, max 40000), limit=50, sort_by=distance.
+Response schema: { "businesses": [ { "id", "name", "url", "phone", "display_phone", "rating", "review_count", "distance", "categories": [{"alias","title"}], "location": {"address1","address2","city","state","zip_code","country","display_address":[]}, "coordinates": {"latitude","longitude"} } ] }
+
+### Credential-absent handling
+
+If credential is None or empty string: returns Failed(AdapterConfigMissing) immediately without making any HTTP request.
+
+### Field mapping
+
+display_phone preferred over phone (formatted). categories -> "categories" (comma-sep titles) and "category_aliases" (comma-sep aliases). radius clamped to 40000m. display_address joined with ", ".
+
+### Evidence
+
+cargo test -p competitor_spy_adapters -- 45 passed, 0 failed.
+Tests: adapter_id, requires_credential, missing-credential (None), empty-string credential, sends Bearer header, records on success (2), all fields extracted, adapter_id tag, zero records OK, HTTP 4xx, HTTP 5xx, parse error.

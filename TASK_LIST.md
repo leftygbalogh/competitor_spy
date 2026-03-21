@@ -183,14 +183,9 @@
 ### T-011: Yelp Fusion adapter
 
 - Source: FORMAL_SPEC.md §4.3, §4.4, §5.1, §5.4, §9.2; U-001 resolved 2026-03-21
-- Status: Not started
-- Dependencies: T-009
-- Output:
-  - `competitor_spy_adapters/src/yelp.rs` — credential required; prompts via `CredentialStore`
-  - Fields extracted: name, address, phone, website, categories, rating, review_count
-  - Integration tests: success, 4xx (invalid key), timeout, parse error → correct `SourceResult`
-- Evidence: `cargo test -p competitor_spy_adapters` passes (Yelp tests). Credential-absent path produces `ADAPTER_CONFIG_MISSING`.
-- Chronicle: [C] Yelp Fusion API endpoint; response schema; field-to-DataPoint mapping; confidence assignment.
+- Status: DONE
+- Output: yelp.rs — YelpAdapter; credential-absent -> AdapterConfigMissing; Bearer auth; field mapping (display_phone preferred, categories titles+aliases, radius clamp 40km). 12 new tests (45 total).
+- Evidence: `cargo test -p competitor_spy_adapters` 45 passed, 0 failed. Chronicle: CHR-CSPY-011.
 
 ---
 

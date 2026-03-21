@@ -1106,3 +1106,14 @@ Next step: None pending.
 - Open questions: None.
 - Blockers: None.
 - Next step: Commit T-000, then T-001 (TDD — failing tests first for SearchQuery/Location/Radius).
+
+## 2026-03-21 Status Snapshot 098
+
+- Timestamp: 2026-03-21
+- Current stage: Stage 4 — Build (T-001 DONE)
+- Completed since last update: T-001 complete. TDD cycle: 12 tests written (RED — all panicked from todo!()), then Radius/Location/SearchQuery implemented (GREEN — 12 passed, 0 failed). commit 833e30f = T-000. T-001 DONE in TASK_LIST.md.
+- In progress: T-001 commit; then T-002.
+- Decisions made: Radius = closed enum + TryFrom<u32>. Location validated at construction. SearchQuery trims whitespace for empty-field detection (stores raw value). Chronicle CHR-CSPY-001 written.
+- Open questions: None.
+- Blockers: None.
+- Next step: Commit T-001, then begin T-002 (BusinessProfile, DataPoint, Confidence, Competitor).

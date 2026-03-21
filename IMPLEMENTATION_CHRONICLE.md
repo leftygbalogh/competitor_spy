@@ -120,3 +120,27 @@ Capture scripts (`capture_session.sh` and `capture_session.ps1`) write all stdou
 - Binary confirmed: `target\debug\competitor-spy.exe` (Test-Path = True).
 - All 6 crates: `cargo build --quiet` returns no warnings relevant to stub structure.
 - TASK_LIST.md: T-000 status = DONE, evidence-date = 2026-03-21.
+
+## Entry CHR-CSPY-001
+
+- Task: T-001
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md §3.2 (SearchQuery, Location, Radius), §3.3 (value objects), §4.2 (validation preconditions)
+
+### Decision: Radius as closed enum with TryFrom<u32>
+
+`Radius` is an enum with five variants (`Km5 | Km10 | Km20 | Km25 | Km50`). Conversion from u32 is done via `TryFrom<u32>` which rejects any value not in {5, 10, 20, 25, 50}. The `km_value()` method returns the fixed numeric constant. Enum prevents any invalid radius value from ever existing in the type system after construction.
+
+### Decision: Location validation at construction, not at use site
+
+`Location::new(lat, lon)` validates lat in [-90.0, 90.0] and lon in [-180.0, 180.0] and returns a typed error differentiating which axis is out of range. Boundary values (±90.0, ±180.0) are accepted. Once a `Location` exists it is always valid — no downstream guard checks needed.
+
+### Decision: SearchQuery trims whitespace to detect empty fields
+
+`SearchQuery::new()` calls `.trim().is_empty()` on both `industry` and `location_input`. A string of only spaces is treated as empty. The raw (untrimmed) string is stored in the struct fields so that the original user input is preserved for audit logging.
+
+### Evidence
+
+- `cargo test -p competitor_spy_domain` — 12 passed, 0 failed.
+- Tests cover: Radius valid/invalid/km_value, Location valid/boundary/lat-out/lon-out, SearchQuery valid/empty-industry/whitespace-industry/empty-location/whitespace-location.
+- Canonical vector FORMAL_SPEC.md §9.7 confirmed: `SearchQuery::new("yoga studio", "Amsterdam, Netherlands", Radius::Km10)` returns Ok.

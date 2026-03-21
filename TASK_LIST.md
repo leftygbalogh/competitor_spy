@@ -47,13 +47,13 @@
 ### T-001: Domain — SearchQuery, Location, Radius (with validation)
 
 - Source: FORMAL_SPEC.md §3.2, §3.3, §4.2, §9.1 (domain::query unit tests), §9.7 (canonical test vector)
-- Status: Not started
+- Status: DONE — 2026-03-21
 - Dependencies: T-000
 - Output:
   - `competitor_spy_domain/src/query.rs` — `SearchQuery`, `Location`, `Radius` types with validation
   - Unit tests covering: empty industry, invalid radius, empty location string, valid canonical input
-- Evidence: `cargo test -p competitor_spy_domain` passes. Canonical input `{ industry: "yoga studio", location_input: "Amsterdam, Netherlands", radius: Km10 }` constructs without error.
-- Chronicle: [C] Type definitions, validation rules, error variants.
+- Evidence: `cargo test -p competitor_spy_domain` — 12 passed, 0 failed. Canonical input `{ industry: "yoga studio", location_input: "Amsterdam, Netherlands", radius: Km10 }` constructs without error.
+- Chronicle: CHR-CSPY-001
 
 ---
 

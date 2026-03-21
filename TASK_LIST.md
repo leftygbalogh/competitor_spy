@@ -109,9 +109,10 @@
 - Output:
   - `competitor_spy_domain/src/ranking.rs` — `RankingEngine` trait + `DefaultRankingEngine`
   - Ranking rules: distance asc → keyword_score desc → name asc (case-insensitive UTF-8) → stable
-  - Unit tests: all tie-break combinations from §5.3; empty input; single competitor; canonical ranking vector from §9.7
-- Evidence: `cargo test -p competitor_spy_domain` passes. §9.7 ranking vector [Alpha, Beta, Gamma] reproduced exactly. Name tie-break [Alpha, Zeta] reproduced exactly.
-- Chronicle: [C] Tie-break rule implementation details.
+  - Unit tests: all tie-break combinations from §5.3; empty input; single competitor; canonical spec example from §4.5
+- Status: DONE — 2026-03-21
+- Evidence: `cargo test -p competitor_spy_domain` — 59 passed. §4.5 spec example [A(2.1km), B(4.5km/0.85), C(4.5km/0.60)] ranked correctly. Name tie-break case-insensitive verified.
+- Chronicle: CHR-CSPY-005
 
 ---
 

@@ -173,6 +173,45 @@ The 200-review saturation cap was chosen to normalise typical SMB review ranges 
 ### Evidence
 
 - `cargo test -p competitor_spy_domain` — 51 passed, 0 failed.
+
+## Entry CHR-CSPY-005  [RECONSTRUCTION-CRITICAL]
+
+- Task: T-005
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md §3.5 (RankingEngine), §4.5 (ranking rules), §5.3 (tie-break table)
+
+### Ranking algorithm (EXACT — determines report order)
+
+Sort key (stable, applied in order):
+1. `distance_km` ascending (smaller distance = higher rank)
+2. `keyword_score` descending (higher relevance = higher rank on distance tie)
+3. `profile.name.value.as_deref().unwrap_or("").to_lowercase()` ascending UTF-8 lexicographic (alphabetical on double tie)
+
+After sort: `rank = index + 1` (1-indexed).
+
+### DefaultRankingEngine scores before sorting
+
+`DefaultRankingEngine` holds an injected `ScoringStrategy` (default: `DefaultScoringStrategy`). Scoring is applied to all Competitor objects before the sort. This makes the rank deterministic given fixed inputs and a fixed scorer.
+
+### sort_by with partial_cmp fallback
+
+`f64` is not `Ord`, so `partial_cmp().unwrap_or(Ordering::Equal)` is used for `distance_km` and `keyword_score`. NaN values are treated as equal to anything (sorts stably). NaN should never appear in practice (validated at construction/scoring).
+
+### Spec example §4.5 verified
+
+| Name | distance_km | keyword_score | expected rank |
+|---|---|---|---|
+| A | 2.1 | 0.70 | 1 |
+| B | 4.5 | 0.85 | 2 |
+| C | 4.5 | 0.60 | 3 |
+
+B and C are at the same distance; B has higher keyword_score → ranked 2nd.
+
+### Evidence
+
+- `cargo test -p competitor_spy_domain` — 59 passed, 0 failed.
+- Spec §4.5 example reproduced exactly in `rank_spec_example_three_competitors` test.
+- Name tie-break case-insensitive test: "ALPHA YOGA" < "zebra yoga" alphabetically → correct.
 - All known-vector tests pass with tolerance < 1e-9.## Entry CHR-CSPY-003
 
 - Task: T-003

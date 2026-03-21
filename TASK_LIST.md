@@ -201,7 +201,7 @@
 ### T-013: SourceRegistry and concurrent collection orchestration
 
 - Source: FORMAL_SPEC.md §3.5, §4.1 (Collecting state), §4.3
-- Status: Not started
+- Status: DONE
 - Dependencies: T-010, T-011, T-012
 - Output:
   - `competitor_spy_adapters/src/registry.rs` — `SourceRegistry`: ordered adapter list; concurrent execution via Tokio `JoinSet`

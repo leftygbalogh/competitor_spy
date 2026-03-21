@@ -419,3 +419,26 @@ displayName.text -> name. formattedAddress -> address. nationalPhoneNumber -> ph
 
 cargo test -p competitor_spy_adapters -- 58 passed, 0 failed.
 Tests: adapter_id, requires_credential, missing-credential (None), empty-string credential, sends X-Goog-Api-Key header, records on success (2), all fields extracted, adapter_id tag, zero places OK, empty response body OK, HTTP 4xx, HTTP 5xx, parse error.
+
+## Entry CHR-CSPY-013
+
+- Task: T-013
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md section 3.5, section 4.1, section 4.3
+
+### Concurrency model (RECONSTRUCTION-CRITICAL)
+
+SourceRegistry holds Vec<Arc<dyn SourceAdapter>>. collect_all() spawns one tokio::task::JoinSet task per adapter, passing (idx, result) tuples. Results collected into Vec<Option<SourceResult>> sized to adapter count, indexed by registration order. After JoinSet completes, flatten() produces ordered Vec<SourceResult>.
+
+### Failure isolation
+
+Each adapter task is independent. If a task panics (JoinError), the first None slot in the result Vec receives a sentinel Failed(ParseError("adapter task panicked")). Adapter-level errors (AdapterConfigMissing, Http(u16), ParseError(String)) are already SourceResult::Failed and handled without unwinding.
+
+### Credential map passthrough
+
+credentials: &HashMap<String,String> keyed by adapter_id(). Each task receives credentials.get(adapter.adapter_id()).cloned() -> Option<String>; passed as .as_deref() -> Option<&str> to adapter.collect().
+
+### Evidence
+
+cargo test -p competitor_spy_adapters -- 67 passed, 0 failed.
+Registry tests: registry_starts_empty, register_increases_count, collect_all_returns_one_result_per_adapter, collect_all_results_are_in_registration_order, collect_all_run_continues_when_one_adapter_fails, collect_all_empty_registry_returns_empty, collect_all_passes_credential_to_adapter, collect_all_passes_none_credential_when_absent_from_map, collect_all_all_adapters_fail_returns_all_failed_results.

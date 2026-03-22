@@ -9,6 +9,10 @@ license.workspace = true
 name = "competitor-spy"
 path = "src/main.rs"
 
+[lib]
+name = "competitor_spy_cli"
+path = "src/lib.rs"
+
 [dependencies]
 competitor_spy_domain = { path = "../competitor_spy_domain" }
 competitor_spy_adapters = { path = "../competitor_spy_adapters" }
@@ -21,3 +25,8 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 log = { workspace = true }
 chrono = { workspace = true }
+
+[dev-dependencies]
+wiremock = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }

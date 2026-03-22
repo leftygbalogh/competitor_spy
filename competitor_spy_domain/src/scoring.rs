@@ -189,10 +189,13 @@ mod tests {
         profile.email = fill("email");
         profile.description = fill("description");
         profile.rating_text = fill("rating_text");
+        profile.editorial_summary = fill("editorial_summary");
+        profile.price_level = fill("price_level");
         // review_count_text is Absent
         let score = scorer().visibility_score(&profile);
-        // completeness = 9/10 = 0.9; review absent → returns completeness
-        assert!((score - 0.9).abs() < 1e-9, "expected 0.9, got {score}");
+        // completeness = 11/12; review absent -> returns completeness
+        let expected = 11.0_f64 / 12.0_f64;
+        assert!((score - expected).abs() < 1e-9, "expected {expected}, got {score}");
     }
 
     #[test]
@@ -208,10 +211,12 @@ mod tests {
         profile.email = fill("email");
         profile.description = fill("description");
         profile.rating_text = fill("rating_text");
+        profile.editorial_summary = fill("editorial_summary");
+        profile.price_level = fill("price_level");
         profile.review_count_text =
             DataPoint::present("review_count_text", "200", "yelp", Confidence::High);
         let score = scorer().visibility_score(&profile);
-        // completeness=1.0, review_score=1.0 → 0.5*1.0 + 0.5*1.0 = 1.0
+        // completeness=1.0, review_score=1.0 -> 0.5*1.0 + 0.5*1.0 = 1.0
         assert!((score - 1.0).abs() < 1e-9, "expected 1.0, got {score}");
     }
 
@@ -221,9 +226,10 @@ mod tests {
         profile.review_count_text =
             DataPoint::present("review_count_text", "100", "yelp", Confidence::High);
         let score = scorer().visibility_score(&profile);
-        // completeness = 1/10 = 0.1; review_score = 100/200 = 0.5
-        // → 0.5*0.1 + 0.5*0.5 = 0.05 + 0.25 = 0.30
-        assert!((score - 0.30).abs() < 1e-9, "expected 0.30, got {score}");
+        // completeness = 1/12; review_score = 100/200 = 0.5
+        // -> 0.5*(1/12) + 0.5*0.5
+        let expected = 0.5 * (1.0_f64 / 12.0_f64) + 0.5 * 0.5;
+        assert!((score - expected).abs() < 1e-9, "expected {expected}, got {score}");
     }
 
     #[test]

@@ -4,6 +4,15 @@
 use uuid::Uuid;
 use crate::query::Location;
 
+// ── PlaceReview ───────────────────────────────────────────────────────────────
+/// One review entry returned by the Google Places API.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PlaceReview {
+    pub text: String,
+    pub rating: u8,
+    pub relative_time: String,
+}
+
 // ── Confidence ────────────────────────────────────────────────────────────────
 
 /// Confidence level for a DataPoint value.
@@ -75,11 +84,16 @@ pub struct BusinessProfile {
     pub description: DataPoint,
     pub rating_text: DataPoint,
     pub review_count_text: DataPoint,
+    // V2 additions (BC-001)
+    pub editorial_summary: DataPoint,
+    pub price_level: DataPoint,
+    /// Up to 5 user reviews from Google Places.
+    pub reviews: Vec<PlaceReview>,
 }
 
 impl BusinessProfile {
-    /// Total number of defined fields.
-    pub const FIELD_COUNT: usize = 10;
+    /// Total number of defined DataPoint fields (reviews is handled separately).
+    pub const FIELD_COUNT: usize = 12;
 
     /// Construct a profile where every field is Absent.
     pub fn empty() -> Self {
@@ -92,8 +106,11 @@ impl BusinessProfile {
             opening_hours:    DataPoint::absent("opening_hours"),
             email:            DataPoint::absent("email"),
             description:      DataPoint::absent("description"),
-            rating_text:      DataPoint::absent("rating_text"),
-            review_count_text: DataPoint::absent("review_count_text"),
+            rating_text:        DataPoint::absent("rating_text"),
+            review_count_text:  DataPoint::absent("review_count_text"),
+            editorial_summary:  DataPoint::absent("editorial_summary"),
+            price_level:        DataPoint::absent("price_level"),
+            reviews:            Vec::new(),
         }
     }
 
@@ -114,12 +131,17 @@ impl BusinessProfile {
         merge_field(&mut self.opening_hours,    other.opening_hours);
         merge_field(&mut self.email,            other.email);
         merge_field(&mut self.description,      other.description);
-        merge_field(&mut self.rating_text,      other.rating_text);
-        merge_field(&mut self.review_count_text, other.review_count_text);
+        merge_field(&mut self.rating_text,       other.rating_text);
+        merge_field(&mut self.review_count_text,  other.review_count_text);
+        merge_field(&mut self.editorial_summary,  other.editorial_summary);
+        merge_field(&mut self.price_level,        other.price_level);
+        if self.reviews.is_empty() {
+            self.reviews = other.reviews;
+        }
     }
 
-    /// Iterate all 10 DataPoints by shared reference.
-    pub fn fields(&self) -> [&DataPoint; 10] {
+    /// Iterate all 12 DataPoints by shared reference.
+    pub fn fields(&self) -> [&DataPoint; 12] {
         [
             &self.name,
             &self.address,
@@ -131,6 +153,8 @@ impl BusinessProfile {
             &self.description,
             &self.rating_text,
             &self.review_count_text,
+            &self.editorial_summary,
+            &self.price_level,
         ]
     }
 }
@@ -279,6 +303,9 @@ mod tests {
         assert!(p.description.is_absent());
         assert!(p.rating_text.is_absent());
         assert!(p.review_count_text.is_absent());
+        assert!(p.editorial_summary.is_absent());
+        assert!(p.price_level.is_absent());
+        assert!(p.reviews.is_empty());
     }
 
     #[test]
@@ -288,14 +315,15 @@ mod tests {
     }
 
     #[test]
-    fn profile_completeness_four_of_ten_is_40_percent() {
+    fn profile_completeness_four_of_twelve() {
         let mut p = BusinessProfile::empty();
         p.name = DataPoint::present("name", "Gym", "osm", Confidence::High);
         p.address = DataPoint::present("address", "123 St", "osm", Confidence::Medium);
         p.phone = DataPoint::present("phone", "+31...", "yelp", Confidence::Low);
         p.website = DataPoint::present("website", "http://...", "google", Confidence::Medium);
         let ratio = p.completeness();
-        assert!((ratio - 0.4).abs() < 1e-9, "expected 0.4, got {ratio}");
+        let expected = 4.0_f64 / 12.0_f64;
+        assert!((ratio - expected).abs() < 1e-9, "expected {expected}, got {ratio}");
     }
 
     #[test]
@@ -312,6 +340,8 @@ mod tests {
         p.description = fill("description");
         p.rating_text = fill("rating_text");
         p.review_count_text = fill("review_count_text");
+        p.editorial_summary = fill("editorial_summary");
+        p.price_level = fill("price_level");
         assert_eq!(p.completeness(), 1.0);
     }
 
@@ -422,6 +452,78 @@ mod tests {
         let result = deduplicate(vec![c1, c2]);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].profile.phone.value.as_deref(), Some("+31-high"));
+    }
+
+    // ── T-DOM-001..T-DOM-005 (V2 domain additions, BC-001) ────────────────────
+
+    // T-DOM-001: PlaceReview struct construction
+    #[test]
+    fn t_dom_001_place_review_fields_accessible() {
+        let r = PlaceReview {
+            text: "Great gym".into(),
+            rating: 5,
+            relative_time: "a week ago".into(),
+        };
+        assert_eq!(r.text, "Great gym");
+        assert_eq!(r.rating, 5);
+        assert_eq!(r.relative_time, "a week ago");
+    }
+
+    // T-DOM-002: New DataPoint fields are Absent in empty()
+    #[test]
+    fn t_dom_002_new_fields_absent_in_empty_profile() {
+        let p = BusinessProfile::empty();
+        assert!(p.editorial_summary.is_absent(), "editorial_summary should be Absent");
+        assert!(p.price_level.is_absent(), "price_level should be Absent");
+        assert!(p.reviews.is_empty(), "reviews should be empty");
+    }
+
+    // T-DOM-003: FIELD_COUNT == 12
+    #[test]
+    fn t_dom_003_field_count_is_12() {
+        assert_eq!(BusinessProfile::FIELD_COUNT, 12);
+    }
+
+    // T-DOM-004: fields() returns 12 elements; new fields at indices 10 and 11
+    #[test]
+    fn t_dom_004_fields_returns_12_including_new_fields() {
+        let mut p = BusinessProfile::empty();
+        p.editorial_summary = DataPoint::present("editorial_summary", "A top gym", "gp", Confidence::High);
+        p.price_level = DataPoint::present("price_level", "$$", "gp", Confidence::High);
+        let fields = p.fields();
+        assert_eq!(fields.len(), 12);
+        assert_eq!(fields[10].field_name, "editorial_summary");
+        assert_eq!(fields[10].value.as_deref(), Some("A top gym"));
+        assert_eq!(fields[11].field_name, "price_level");
+        assert_eq!(fields[11].value.as_deref(), Some("$$"));
+    }
+
+    // T-DOM-005: reviews merge rule -- empty self takes other; non-empty self keeps itself
+    #[test]
+    fn t_dom_005_reviews_merge_empty_takes_other() {
+        let mut base = BusinessProfile::empty();
+        let mut other = BusinessProfile::empty();
+        other.reviews = vec![
+            PlaceReview { text: "Loved it".into(), rating: 5, relative_time: "1 month ago".into() },
+        ];
+        base.merge_with(other);
+        assert_eq!(base.reviews.len(), 1);
+        assert_eq!(base.reviews[0].text, "Loved it");
+    }
+
+    #[test]
+    fn t_dom_005b_reviews_merge_nonempty_self_keeps_itself() {
+        let mut base = BusinessProfile::empty();
+        base.reviews = vec![
+            PlaceReview { text: "Original".into(), rating: 4, relative_time: "2 months ago".into() },
+        ];
+        let mut other = BusinessProfile::empty();
+        other.reviews = vec![
+            PlaceReview { text: "Incoming".into(), rating: 3, relative_time: "1 week ago".into() },
+        ];
+        base.merge_with(other);
+        assert_eq!(base.reviews.len(), 1);
+        assert_eq!(base.reviews[0].text, "Original");
     }
 }
 

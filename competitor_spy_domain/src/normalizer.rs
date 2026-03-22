@@ -66,6 +66,9 @@ fn build_profile(fields: &HashMap<String, String>, source_id: &str) -> BusinessP
         description:       make_dp("description",       fields, source_id),
         rating_text:       make_dp("rating_text",       fields, source_id),
         review_count_text: make_dp("review_count_text", fields, source_id),
+        editorial_summary: make_dp("editorial_summary", fields, source_id),
+        price_level:       make_dp("price_level",       fields, source_id),
+        reviews:           Vec::new(),
     }
 }
 

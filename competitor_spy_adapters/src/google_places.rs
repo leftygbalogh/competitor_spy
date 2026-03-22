@@ -86,6 +86,39 @@ struct GooglePlace {
     user_rating_count: Option<u64>,
     #[serde(default)]
     location: Option<GoogleLatLng>,
+    // V2 additions (BC-002)
+    #[serde(rename = "editorialSummary", default)]
+    editorial_summary: Option<EditorialSummaryObj>,
+    #[serde(rename = "priceLevel", default)]
+    price_level: Option<String>,
+    #[serde(rename = "regularOpeningHours", default)]
+    regular_opening_hours: Option<OpeningHoursObj>,
+    #[serde(default)]
+    reviews: Vec<ReviewItem>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EditorialSummaryObj {
+    text: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpeningHoursObj {
+    #[serde(rename = "weekdayDescriptions", default)]
+    weekday_descriptions: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReviewItem {
+    text: Option<ReviewText>,
+    rating: Option<f64>,
+    #[serde(rename = "relativePublishTimeDescription", default)]
+    relative_publish_time_description: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReviewText {
+    text: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -173,7 +206,7 @@ impl SourceAdapter for GooglePlacesAdapter {
             .header("X-Goog-Api-Key", api_key)
             .header(
                 "X-Goog-FieldMask",
-                "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.userRatingCount,places.location",
+                "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.userRatingCount,places.location,places.editorialSummary,places.priceLevel,places.regularOpeningHours,places.reviews",
             )
             .json(&request_body)
             .send()
@@ -241,6 +274,20 @@ fn failed_result(code: ReasonCode) -> SourceResult {
 /// including niche categories like "pilates" that have no Google place type.
 /// locationBias biases results toward the circle; results may extend slightly
 /// beyond the radius but are ranked by distance.
+/// Map Google priceLevel enum string to dollar-sign symbols.
+/// DT-002: PRICE_LEVEL_FREE -> "", INEXPENSIVE -> "$", MODERATE -> "$$",
+/// EXPENSIVE -> "$$$", VERY_EXPENSIVE -> "$$$$", unknown -> "".
+fn price_level_to_symbol(price_level: &str) -> String {
+    match price_level {
+        "PRICE_LEVEL_FREE"          => String::new(),
+        "PRICE_LEVEL_INEXPENSIVE"   => "$".to_string(),
+        "PRICE_LEVEL_MODERATE"      => "$$".to_string(),
+        "PRICE_LEVEL_EXPENSIVE"     => "$$$".to_string(),
+        "PRICE_LEVEL_VERY_EXPENSIVE" => "$$$$".to_string(),
+        _                           => String::new(),
+    }
+}
+
 fn build_request_body(industry: &str, lat: f64, lon: f64, radius_m: f64) -> TextSearchRequest {
     // Max radius: 50000m; clamp to 50km.
     let radius_clamped = radius_m.min(50_000.0);
@@ -291,6 +338,39 @@ fn place_to_record(p: GooglePlace) -> RawRecord {
     if let Some(loc) = p.location {
         fields.insert("lat".to_string(), loc.latitude.to_string());
         fields.insert("lon".to_string(), loc.longitude.to_string());
+    }
+    // V2 additions (BC-002)
+    if let Some(es) = p.editorial_summary {
+        fields.insert("editorial_summary".to_string(), es.text);
+    }
+    if let Some(pl) = p.price_level {
+        let sym = price_level_to_symbol(&pl);
+        if !sym.is_empty() {
+            fields.insert("price_level".to_string(), sym);
+        }
+    }
+    if let Some(oh) = p.regular_opening_hours {
+        if !oh.weekday_descriptions.is_empty() {
+            fields.insert("opening_hours".to_string(), oh.weekday_descriptions.join("\n"));
+        }
+    }
+    if !p.reviews.is_empty() {
+        let reviews_v2: Vec<serde_json::Value> = p.reviews.into_iter()
+            .take(5)
+            .filter_map(|r| {
+                let text = r.text?.text;
+                let rating = r.rating.unwrap_or(0.0) as u8;
+                let relative_time = r.relative_publish_time_description.unwrap_or_default();
+                Some(serde_json::json!({
+                    "text": text,
+                    "rating": rating,
+                    "relative_time": relative_time,
+                }))
+            })
+            .collect();
+        if let Ok(json) = serde_json::to_string(&reviews_v2) {
+            fields.insert("reviews_json".to_string(), json);
+        }
     }
 
     RawRecord {
@@ -522,5 +602,132 @@ mod tests {
         let a = GooglePlacesAdapter::with_client(make_client(), mock.uri());
         let result = a.collect(&make_query(), amsterdam(), Radius::Km10, Some("key")).await;
         assert!(matches!(result.status, AdapterResultStatus::Failed(ReasonCode::ParseError)));
+    }
+
+    // ── T-ADP-001..T-ADP-005 (V2 adapter additions, BC-002) ─────────────────
+
+    fn place_with_v2_fields_response() -> serde_json::Value {
+        serde_json::json!({
+            "places": [
+                {
+                    "id": "ChIJv2test1",
+                    "displayName": { "text": "Iron Temple Gym" },
+                    "formattedAddress": "Test St 1, Amsterdam",
+                    "location": { "latitude": 52.370, "longitude": 4.895 },
+                    "editorialSummary": { "text": "A premium fitness facility" },
+                    "priceLevel": "PRICE_LEVEL_MODERATE",
+                    "regularOpeningHours": {
+                        "weekdayDescriptions": [
+                            "Monday: 6:00 AM - 10:00 PM",
+                            "Tuesday: 6:00 AM - 10:00 PM"
+                        ]
+                    },
+                    "reviews": [
+                        {
+                            "text": { "text": "Excellent facilities!" },
+                            "rating": 5.0,
+                            "relativePublishTimeDescription": "a week ago"
+                        },
+                        {
+                            "text": { "text": "Good value." },
+                            "rating": 4.0,
+                            "relativePublishTimeDescription": "2 weeks ago"
+                        }
+                    ]
+                }
+            ]
+        })
+    }
+
+    // T-ADP-001: editorial_summary is mapped to record key "editorial_summary"
+    #[tokio::test]
+    async fn t_adp_001_editorial_summary_mapped() {
+        let mock = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v1/places:searchText"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(place_with_v2_fields_response()))
+            .mount(&mock)
+            .await;
+        let a = GooglePlacesAdapter::with_client(make_client(), mock.uri());
+        let result = a.collect(&make_query(), amsterdam(), Radius::Km10, Some("key")).await;
+        assert_eq!(result.records[0].fields["editorial_summary"], "A premium fitness facility");
+    }
+
+    // T-ADP-002: priceLevel MODERATE maps to "$$" in record key "price_level"
+    #[tokio::test]
+    async fn t_adp_002_price_level_symbol_mapped() {
+        let mock = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v1/places:searchText"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(place_with_v2_fields_response()))
+            .mount(&mock)
+            .await;
+        let a = GooglePlacesAdapter::with_client(make_client(), mock.uri());
+        let result = a.collect(&make_query(), amsterdam(), Radius::Km10, Some("key")).await;
+        assert_eq!(result.records[0].fields["price_level"], "$$");
+    }
+
+    // T-ADP-003: opening hours weekday descriptions joined by newline -> "opening_hours"
+    #[tokio::test]
+    async fn t_adp_003_opening_hours_joined() {
+        let mock = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v1/places:searchText"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(place_with_v2_fields_response()))
+            .mount(&mock)
+            .await;
+        let a = GooglePlacesAdapter::with_client(make_client(), mock.uri());
+        let result = a.collect(&make_query(), amsterdam(), Radius::Km10, Some("key")).await;
+        let oh = &result.records[0].fields["opening_hours"];
+        assert!(oh.contains("Monday: 6:00 AM - 10:00 PM"));
+        assert!(oh.contains('\n'));
+        assert!(oh.contains("Tuesday: 6:00 AM - 10:00 PM"));
+    }
+
+    // T-ADP-004: reviews serialized as JSON array string under "reviews_json"
+    #[tokio::test]
+    async fn t_adp_004_reviews_serialized_as_json_string() {
+        let mock = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v1/places:searchText"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(place_with_v2_fields_response()))
+            .mount(&mock)
+            .await;
+        let a = GooglePlacesAdapter::with_client(make_client(), mock.uri());
+        let result = a.collect(&make_query(), amsterdam(), Radius::Km10, Some("key")).await;
+        let json_str = &result.records[0].fields["reviews_json"];
+        let parsed: serde_json::Value = serde_json::from_str(json_str).expect("reviews_json must be valid JSON");
+        assert!(parsed.is_array());
+        let arr = parsed.as_array().unwrap();
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0]["text"], "Excellent facilities!");
+        assert_eq!(arr[0]["rating"], 5);
+        assert_eq!(arr[0]["relative_time"], "a week ago");
+    }
+
+    // T-ADP-005: when v2 fields absent, record is still valid (no panic, no key)
+    #[tokio::test]
+    async fn t_adp_005_v2_fields_absent_record_still_valid() {
+        let resp = serde_json::json!({
+            "places": [{
+                "id": "ChIJminimal",
+                "displayName": { "text": "Basic Gym" },
+                "location": { "latitude": 52.0, "longitude": 4.0 }
+            }]
+        });
+        let mock = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v1/places:searchText"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(resp))
+            .mount(&mock)
+            .await;
+        let a = GooglePlacesAdapter::with_client(make_client(), mock.uri());
+        let result = a.collect(&make_query(), amsterdam(), Radius::Km10, Some("key")).await;
+        assert!(matches!(result.status, AdapterResultStatus::Success));
+        let rec = &result.records[0];
+        assert!(!rec.fields.contains_key("editorial_summary"), "absent field should not be present");
+        assert!(!rec.fields.contains_key("price_level"), "absent field should not be present");
+        assert!(!rec.fields.contains_key("opening_hours"), "absent field should not be present");
+        assert!(!rec.fields.contains_key("reviews_json"), "absent field should not be present");
     }
 }

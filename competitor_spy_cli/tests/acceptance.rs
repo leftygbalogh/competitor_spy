@@ -107,9 +107,9 @@ async fn as_001_valid_input_both_outputs_exit_0() {
         .mount(&server)
         .await;
 
-    // Google Places: POST /v1/places:searchNearby returns empty
+    // Google Places: POST /v1/places:searchText returns empty
     Mock::given(method("POST"))
-        .and(path("/v1/places:searchNearby"))
+        .and(path("/v1/places:searchText"))
         .respond_with(ResponseTemplate::new(200).set_body_json(google_empty_body()))
         .mount(&server)
         .await;
@@ -168,7 +168,7 @@ async fn as_002_one_adapter_timeout_still_exit_0() {
 
     // Google: 503
     Mock::given(method("POST"))
-        .and(path("/v1/places:searchNearby"))
+        .and(path("/v1/places:searchText"))
         .respond_with(ResponseTemplate::new(503))
         .mount(&server)
         .await;
@@ -261,7 +261,7 @@ async fn as_005_all_adapters_fail_zero_competitors_exit_0() {
         .await;
 
     Mock::given(method("POST"))
-        .and(path("/v1/places:searchNearby"))
+        .and(path("/v1/places:searchText"))
         .respond_with(ResponseTemplate::new(503))
         .mount(&server)
         .await;

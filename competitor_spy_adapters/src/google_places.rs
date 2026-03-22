@@ -1,14 +1,19 @@
 // GooglePlacesAdapter — T-012
 // TDD: WireMock used to mock Google Places API responses.
 //
-// Google Places API (v1 Nearby Search):
-//   POST https://places.googleapis.com/v1/places:searchNearby
+// Google Places API (New) Text Search:
+//   POST https://places.googleapis.com/v1/places:searchText
 //   Authorization: api_key in X-Goog-Api-Key header
 //   Field mask via X-Goog-FieldMask header
 //
+// Text Search is used (not Nearby Search) because it accepts a free-text
+// textQuery, which maps naturally onto the user's industry keyword.
+// Nearby Search requires a type from the Places API table, which does not
+// cover niche industries like "pilates".
+//
 // Response: { "places": [ { "id", "displayName.text", "formattedAddress",
 //   "nationalPhoneNumber", "websiteUri", "types", "rating", "userRatingCount",
-//   "location": {"latitude","longitude"}, "regularOpeningHours": {...} } ] }
+//   "location": {"latitude","longitude"} } ] }
 //
 // Requires credential: yes (Google Places API key stored under "google_places")
 // If credential absent: returns Failed(AdapterConfigMissing)
@@ -27,19 +32,19 @@ use crate::pacing::PacingPolicy;
 // ── Google Places API request/response types ─────────────────────────────────
 
 #[derive(Debug, Serialize)]
-struct NearbySearchRequest {
-    #[serde(rename = "includedTypes")]
-    included_types: Vec<String>,
+struct TextSearchRequest {
+    #[serde(rename = "textQuery")]
+    text_query: String,
     #[serde(rename = "maxResultCount")]
     max_result_count: u32,
-    #[serde(rename = "locationRestriction")]
-    location_restriction: LocationRestriction,
+    #[serde(rename = "locationBias")]
+    location_bias: LocationBias,
     #[serde(rename = "rankPreference")]
     rank_preference: String,
 }
 
 #[derive(Debug, Serialize)]
-struct LocationRestriction {
+struct LocationBias {
     circle: Circle,
 }
 
@@ -152,7 +157,7 @@ impl SourceAdapter for GooglePlacesAdapter {
 
         self.pacing.pace().await;
 
-        let url = format!("{}/v1/places:searchNearby", self.base_url);
+        let url = format!("{}/v1/places:searchText", self.base_url);
         // Audit: log URL as hostname+path only (§6.3) — api key is in header, not URL
         info!(event = "adapter_request", adapter_id = "google_places", url = %url);
 
@@ -231,22 +236,19 @@ fn failed_result(code: ReasonCode) -> SourceResult {
     }
 }
 
-/// Build the NearbySearch request body.
-/// Uses "establishment" as the base type since Google Places types are specific.
-/// Also passes the industry keyword as part of the search context via tag matching.
-fn build_request_body(industry: &str, lat: f64, lon: f64, radius_m: f64) -> NearbySearchRequest {
-    // Google Places API accepts specific type strings; we use "establishment" as
-    // the broadest catch-all. The industry keyword refines results through ranking.
+/// Build the Text Search request body.
+/// textQuery is the user's industry keyword — works for any free-text term
+/// including niche categories like "pilates" that have no Google place type.
+/// locationBias biases results toward the circle; results may extend slightly
+/// beyond the radius but are ranked by distance.
+fn build_request_body(industry: &str, lat: f64, lon: f64, radius_m: f64) -> TextSearchRequest {
     // Max radius: 50000m; clamp to 50km.
     let radius_clamped = radius_m.min(50_000.0);
-    // Suppress unused — industry is used for context in audit events but Google
-    // Nearby Search v1 filters by type, not keyword. We store it as a comment.
-    let _ = industry;
 
-    NearbySearchRequest {
-        included_types: vec!["establishment".to_string()],
+    TextSearchRequest {
+        text_query: industry.to_string(),
         max_result_count: 20,
-        location_restriction: LocationRestriction {
+        location_bias: LocationBias {
             circle: Circle {
                 center: LatLng { latitude: lat, longitude: lon },
                 radius: radius_clamped,
@@ -379,7 +381,7 @@ mod tests {
     async fn adapter_sends_api_key_in_goog_header() {
         let mock = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/v1/places:searchNearby"))
+            .and(path("/v1/places:searchText"))
             .and(header("X-Goog-Api-Key", "my-test-key"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"places": []})))
             .mount(&mock)
@@ -394,7 +396,7 @@ mod tests {
     async fn adapter_returns_records_on_success() {
         let mock = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/v1/places:searchNearby"))
+            .and(path("/v1/places:searchText"))
             .respond_with(ResponseTemplate::new(200).set_body_json(two_places_response()))
             .mount(&mock)
             .await;
@@ -412,7 +414,7 @@ mod tests {
     async fn adapter_extracts_all_place_fields() {
         let mock = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/v1/places:searchNearby"))
+            .and(path("/v1/places:searchText"))
             .respond_with(ResponseTemplate::new(200).set_body_json(two_places_response()))
             .mount(&mock)
             .await;
@@ -437,7 +439,7 @@ mod tests {
     async fn adapter_record_has_adapter_id_tag() {
         let mock = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/v1/places:searchNearby"))
+            .and(path("/v1/places:searchText"))
             .respond_with(ResponseTemplate::new(200).set_body_json(two_places_response()))
             .mount(&mock)
             .await;
@@ -453,7 +455,7 @@ mod tests {
     async fn adapter_returns_success_with_zero_places() {
         let mock = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/v1/places:searchNearby"))
+            .and(path("/v1/places:searchText"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"places": []})))
             .mount(&mock)
             .await;
@@ -469,7 +471,7 @@ mod tests {
         // Google returns {} (no "places" key) when there are no results
         let mock = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/v1/places:searchNearby"))
+            .and(path("/v1/places:searchText"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
             .mount(&mock)
             .await;
@@ -484,7 +486,7 @@ mod tests {
     async fn adapter_returns_failed_http4xx_on_403() {
         let mock = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/v1/places:searchNearby"))
+            .and(path("/v1/places:searchText"))
             .respond_with(ResponseTemplate::new(403))
             .mount(&mock)
             .await;
@@ -498,7 +500,7 @@ mod tests {
     async fn adapter_returns_failed_http5xx_on_503() {
         let mock = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/v1/places:searchNearby"))
+            .and(path("/v1/places:searchText"))
             .respond_with(ResponseTemplate::new(503))
             .mount(&mock)
             .await;
@@ -512,7 +514,7 @@ mod tests {
     async fn adapter_returns_failed_parse_error_on_invalid_json() {
         let mock = MockServer::start().await;
         Mock::given(method("POST"))
-            .and(path("/v1/places:searchNearby"))
+            .and(path("/v1/places:searchText"))
             .respond_with(ResponseTemplate::new(200).set_body_string("not json"))
             .mount(&mock)
             .await;

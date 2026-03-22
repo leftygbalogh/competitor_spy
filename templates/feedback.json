@@ -171,7 +171,19 @@
     },
     {
       "project_id": "competitor-spy-v1-2026-03-22",
-      "stage": 5,      "role": "rust-backend-specialist",
+      "stage": 2,
+      "role": "greenfield-formal-spec-author",
+      "doc": "FORMAL_SPEC.md",
+      "subsection": "Observability / CLI UX",
+      "change_type": "add",
+      "before": "Telemetry spec only requires structured log output; no guidance on whether logs should also appear on screen during a run",
+      "after": "Recommend: for V1 CLI projects, displaying structured logs to stderr in real time (in addition to writing them) is strongly encouraged. Live log stream lets the user see adapter progress, timing, outcomes, and warnings as the run executes — providing immediate confidence and debuggability without needing separate tooling. Make stderr log display the default for V1; make it suppressible (e.g. --log-level error) for clean output when only the report is needed.",
+      "reasoning": "The competitor-spy live log stream (geocoding → adapter requests → outcomes → record counts) was praised by the product owner as providing excellent visibility into what the tool was doing. This should be a default V1 design pattern for CLI tools, not an afterthought."
+    },
+    {
+      "project_id": "competitor-spy-v1-2026-03-22",
+      "stage": 5,
+      "role": "rust-backend-specialist",
       "doc": "RELEASE_CHECKLIST.md",
       "subsection": "Stage 5 Verify Results",
       "change_type": "add",

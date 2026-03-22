@@ -101,6 +101,7 @@ This is the master quality reference for this template. Every agent persona, sta
 - Alerting on meaningful signals (not noise)
 - Runbooks for known failure scenarios
 - For interactive CLI projects, screen-state and application-state capture artifacts are retained with clear naming and path conventions for post-failure analysis
+- **For V1 CLI projects: display structured logs to stderr in real time by default** (adapter requests, outcomes, record counts, warnings visible as the run progresses). This gives the user immediate confidence and debuggability without separate tooling. Provide a flag (e.g. `--log-level error`) to suppress verbose output when only the final report is needed.
 
 ### 10. Documentation
 - Architecture decision records (why decisions were made, not just what)

@@ -164,7 +164,7 @@ if ($exitCode -eq 0) {
 } else {
     Write-Host "  [WARN] Search exited with code $exitCode. Check output above for details." -ForegroundColor Yellow
     Write-Host "  A non-zero exit may just mean geocoding failed or Google returned no results." -ForegroundColor DarkGray
-    Write-Host "  The key is still stored — try a different location." -ForegroundColor DarkGray
+    Write-Host "  The key is still stored - try a different location." -ForegroundColor DarkGray
 }
 
 # ---------------------------------------------------------------------------

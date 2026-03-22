@@ -43,7 +43,7 @@ impl AdapterUrls {
             nominatim: "https://nominatim.openstreetmap.org".to_string(),
             osm_overpass: "https://overpass-api.de/api/interpreter".to_string(),
             yelp: "https://api.yelp.com".to_string(),
-            google_places: "https://maps.googleapis.com".to_string(),
+            google_places: "https://places.googleapis.com".to_string(),
         }
     }
 }

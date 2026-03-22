@@ -35,3 +35,28 @@ Initial release. Greenfield Rust CLI prototype complete.
 
 - DEF-001: `AdapterUrls::production()` Overpass URL was `/api` instead of `/api/interpreter` — discovered during T-018 live run; fixed and regressed in commit `c07d2a1`
 
+---
+
+## v1.0.1 — 2026-03-22 (post-release patch)
+
+### Defects fixed
+
+- **DEF-002** (`cd8c443`): Overpass returned 0 results for dense cities (e.g. Amsterdam cafes). Root cause: regex QL query timed out on Overpass public API. Fix: switched to exact-match indexed queries using `[amenity=cafe]` style filters.
+- **DEF-003** (`7e69048`): Niche industries with no OSM tag (e.g. "pilates") returned 0 results from Overpass. Fix: concurrent `tokio::join!` running tag query + name-regex query; name-regex failures are best-effort (silently ignored on timeout).
+- **DEF-004** (Google Places domain URL): `AdapterUrls::production()` used `maps.googleapis.com` — incorrect domain for the New Places API. Corrected to `places.googleapis.com`.
+- **DEF-005** (`9ac0f37`): Google Places returned HTTP 400 on every request. Root cause: the adapter called `places:searchNearby` with `includedTypes: ["establishment"]` — "establishment" is a legacy type not in Table A of the New Places API. Deeper cause: `searchNearby` cannot filter by keyword at all; the industry string was silently discarded (`let _ = industry`). Fix: switched to `places:searchText` with `textQuery` set to the industry keyword and `locationBias` (circle) for geographic weighting.
+
+### Live E2E result after patch
+
+```
+adapter_id="google_places" outcome="success" record_count=20
+adapter_id="osm_overpass"  outcome="success" record_count=9
+29 competitors returned for "pilates / Neulengbach, Austria / 50 km"
+PDF written to docs/evidence/sessions/competitor_spy_report_20260322_115413_UTC.pdf
+```
+
+### Credentials management added
+
+- New `credentials` subcommand: `competitor-spy credentials set <adapter>`, `delete <adapter>`, `list`
+- Setup script for Windows: `scripts/setup_google_places.ps1`
+

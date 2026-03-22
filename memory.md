@@ -22,12 +22,18 @@ Use this file to persist current status, key decisions, blockers, and next actio
 
 Note: Idle-triggered behavior requires host/editor automation to enforce consistently.
 
-## 2026-03-19 Status Snapshot 001
+## 2026-03-22 Status Snapshot — V1 Complete
 
-- Timestamp: 2026-03-19
-- Current stage: Governance setup
-- Completed since last update: Created ordered governance docs, created templates (project brief/formal spec/task list), created agent template, initialized git repository, created prompt log.
-- In progress: Refining rules and preparing persona files.
+- Timestamp: 2026-03-22T11:54 UTC
+- Current stage: V1 closed; starting V2 discovery
+- Completed since last update: DEF-002 (Overpass 0 results), DEF-003 (concurrent tag+name), DEF-004 (Google Places domain URL), DEF-005 (searchNearby→searchText, 400 fixed), credentials subcommand, setup script; live E2E confirmed 29 results.
+- In progress: V2 discovery
+- Decisions made: V1 is legacy baseline for V2 extension. Google Places searchText is the correct endpoint going forward.
+- Open questions: V2 scope TBD via discovery
+- Blockers: None
+- Next step: V2 discovery cycle — read PROJECT_BRIEF.md and FORMAL_SPEC.md as baseline; ask Lefty for V2 intent
+
+
 - Decisions made: Enforced one-question clarification, max 12 questions per cycle, strict stage gates, no coding without explicit instruction, TDD/DDD/XP principles included.
 - Open questions: Whether to implement automated idle save/commit hooks now.
 - Blockers: None.

@@ -66,6 +66,7 @@ For projects initialized from this template:
 - Select project mode (Greenfield or Brownfield) at the start and carry that through brief, spec, planning, and role assignment.
 - Ask project mode as the first discovery question before asking any project-domain requirement details.
 - For template-clone projects, verify repository identity immediately after clone (`git remote -v`) and repoint `origin` before any publish if needed.
+- **When `GOVERNANCE_MODE.md` mode is `Project` (not `Template`): Stage 1 discovery must include an explicit step — show the user the current `git remote -v` output, ask for the target remote repository URL for this project, and require the user to confirm or replace the origin before any commits are pushed. Do not proceed past Stage 1 without this confirmation.**
 - Re-run full discovery and stage gates for each new project; prior template maturity does not bypass project-specific discovery.
 - Create and approve project brief before formal specification.
 - Create and approve formal specification before task planning.

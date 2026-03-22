@@ -158,6 +158,17 @@
       "before": "No explicit step to log feedback entries before close",
       "after": "Add checklist item: 'Feedback entries written to templates/feedback.json before Stage 6 close' — this was missed in Competitor Spy V1 and had to be back-filled at V2 discovery start",
       "reasoning": "Process improvement loop only works if feedback is captured while memory is fresh. Missing it at close risks losing valuable lessons."
+    },
+    {
+      "project_id": "competitor-spy-v1-2026-03-22",
+      "stage": 1,
+      "role": "greenfield-domain-discovery-expert",
+      "doc": "00_INTERACTION_GUARDRAILS.md / copilot-instructions.md",
+      "subsection": "New Project Bootstrap Rules",
+      "change_type": "add",
+      "before": "Bootstrap rules verify repository identity after clone but do not prompt for a new remote URL when governance mode is Project",
+      "after": "Recommend: when GOVERNANCE_MODE.md is set to 'Project' (not 'Template'), Stage 1 discovery must include an explicit step: ask the user for the target remote repository URL, run 'git remote -v' to show the current origin, and require the user to confirm or replace it before any commits are pushed. This prevents project code being pushed to the template repository by mistake.",
+      "reasoning": "In the Competitor Spy project, the cloned workspace origin still pointed to AI_Governance_Template.git. Code was being pushed to the template repo until the remote was manually repointed. This should be a mandatory Stage 1 gate, not an optional reminder."
     }
   ]
 }

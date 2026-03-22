@@ -545,3 +545,177 @@ pub trait ScoringStrategy: Send + Sync {
 - Approved by: Team Lead Agent (delegated authority per PROJECT_BRIEF.md §8.2)
 - Approval date: 2026-03-21
 - Notes: U-001 resolved by Lefty 2026-03-21 — all four adapters approved. U-002 resolved by Team Lead (40% field-completeness threshold). Spec frozen for Stage 3 planning. Breaking changes to `domain::run::execute` signature require an ADR before any Stage 4 implementation.
+
+---
+
+# V2 Specification Addendum — Competitor Spy v2.0
+
+## V2.1 Addendum Metadata
+
+- Spec ID: CSPY-SPEC-002
+- Version: 2.0
+- Source brief: V2 brief approved by Lefty 2026-03-22
+- Mode: Brownfield extension of CSPY-SPEC-001 v1.0
+- Status: APPROVED — Team Lead Agent, 2026-03-22
+- Author: Team Lead Agent
+- V1 baseline: all V1 behaviour preserved; this addendum extends, never replaces
+- Track: A (Google Places API enrichment only)
+
+## V2.2 Scope Delta
+
+**Added in V2:**
+- Seven additional Google Places fields collected and rendered per competitor: opening hours, price level, editorial summary, reviews (up to 5), rating (rendered — was collected but not shown in V1), user rating count (rendered — was collected but not shown in V1), business type tags (rendered — was collected but not shown in V1)
+- New `--detail` CLI flag enabling extended per-competitor output in both terminal and PDF renderers
+- Default (no flag) terminal and PDF output unchanged from V1
+
+**Explicitly out of scope for V2:**
+- Website scraping (Track B → V3)
+- New source adapters
+- LLM summarization, social media data
+- Scheduling, monitoring, web interface, multi-user
+
+## V2.3 Domain Model Delta
+
+### V2.3.1 Extended BusinessProfile fields
+
+`BusinessProfile` gains the following optional fields. All are `DataPoint` values (present or Absent per V1 convention):
+
+| Field name | Type | Source | Confidence when present |
+|---|---|---|---|
+| `opening_hours` | `Vec<String>` — Mon–Sun text lines | Google Places | Medium |
+| `price_level` | `Option<u8>` — 1 to 4 | Google Places | High |
+| `editorial_summary` | `String` | Google Places | Medium |
+| `reviews` | `Vec<PlaceReview>` — up to 5 | Google Places | Medium |
+| `rating` | `f64` — 1.0–5.0 | Google Places | High |
+| `user_rating_count` | `u32` | Google Places | High |
+| `place_types` | `Vec<String>` | Google Places | Medium |
+
+### V2.3.2 New value object: PlaceReview
+
+```
+PlaceReview {
+    text: String,
+    rating: u8,             // 1–5
+    relative_time: String,  // e.g. "3 months ago"
+}
+```
+
+All fields best-effort; `text` may be empty (Google sometimes omits review body). If `text` is empty the review is still rendered with star rating and recency.
+
+### V2.3.3 Missing field policy
+
+Identical to V1 §5.2: if a field is absent from the API response, it becomes an Absent DataPoint. It is displayed as `--` in terminal output and omitted from the PDF detail section with a `(not available)` note. No field absence aborts the run.
+
+## V2.4 API Contract Delta — Google Places Adapter
+
+### V2.4.1 Field mask change
+
+Current V1 field mask (in `X-Goog-FieldMask` header):
+```
+places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,
+places.websiteUri,places.types,places.rating,places.userRatingCount,places.location
+```
+
+V2 field mask (additions in **bold**):
+```
+places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,
+places.websiteUri,places.types,places.rating,places.userRatingCount,places.location,
+places.regularOpeningHours.weekdayDescriptions,places.priceLevel,
+places.editorialSummary,places.reviews
+```
+
+### V2.4.2 Response struct additions
+
+`GooglePlace` struct gains:
+- `regular_opening_hours: Option<RegularOpeningHours>` — `{ weekday_descriptions: Vec<String> }`
+- `price_level: Option<String>` — Google returns string enum: `PRICE_LEVEL_FREE`, `PRICE_LEVEL_INEXPENSIVE`, `PRICE_LEVEL_MODERATE`, `PRICE_LEVEL_EXPENSIVE`, `PRICE_LEVEL_VERY_EXPENSIVE`
+- `editorial_summary: Option<EditorialSummary>` — `{ text: String }`
+- `reviews: Option<Vec<GoogleReview>>` — `{ text: String, rating: u8, relative_publish_time_description: String }`
+
+### V2.4.3 Price level mapping
+
+| API value | Rendered symbol |
+|---|---|
+| `PRICE_LEVEL_FREE` | Free |
+| `PRICE_LEVEL_INEXPENSIVE` | $ |
+| `PRICE_LEVEL_MODERATE` | $$ |
+| `PRICE_LEVEL_EXPENSIVE` | $$$ |
+| `PRICE_LEVEL_VERY_EXPENSIVE` | $$$$ |
+| absent / unknown | `--` |
+
+### V2.4.4 Adapter contract (pre/post)
+
+- Pre: same as V1 — valid API key in credential store
+- Post: `GooglePlace` structs may now contain populated `regular_opening_hours`, `price_level`, `editorial_summary`, `reviews`; all fields are optional and their absence does not affect the `outcome="success"` criteria
+- Error contract unchanged from V1: HTTP 4xx/5xx handling, timeout, parse error — all produce `Failed` result as before
+
+## V2.5 CLI Contract Delta
+
+### V2.5.1 New flag
+
+```
+--detail    Include extended competitor detail in terminal and PDF output.
+            Default: off. When off, output is identical to V1.
+```
+
+### V2.5.2 Acceptance contract
+
+| Input | Expected output |
+|---|---|
+| No `--detail` flag | Identical to V1: summary table only |
+| `--detail` flag | Summary table + per-competitor detail panel |
+| `--detail` + `--no-pdf` | Detail panel in terminal only |
+| `--detail` + fields absent for a competitor | Absent fields shown as `--`; run does not abort |
+
+## V2.6 Renderer Contract Delta
+
+### V2.6.1 Terminal detail panel
+
+When `--detail` is present, after each ranked table row, print a detail panel:
+
+```
+  Opening hours : Mon 09:00–18:00, Tue 09:00–18:00, …
+  Price level   : $$
+  Description   : Boutique reformer pilates studio in the historic centre.
+  Rating        : 4.7 ★ (132 reviews)
+  Reviews:
+    ★★★★★ "Amazing instructors, small groups." — 2 months ago
+    ★★★★☆ "Great classes but parking is tricky." — 4 months ago
+  Types         : gym, health, point_of_interest
+```
+
+Panel is indented 2 spaces. Lines with Absent data are omitted entirely (no `--` clutter in the detail panel; `--` is reserved for summary table columns).
+
+### V2.6.2 PDF detail section
+
+Each competitor page/block gains an extended section below the summary fields containing the same information as the terminal detail panel, formatted for A4 portrait layout. Absent fields omitted.
+
+## V2.7 Test Strategy Delta
+
+### V2.7.1 Unit tests (adapter)
+
+- New test: `google_places_request_body_contains_expanded_field_mask` — assert the serialised `X-Goog-FieldMask` header in the outgoing request contains all new field names (per V1 feedback — request body/header assertions must be present)
+- New test: `google_places_parses_opening_hours_from_response`
+- New test: `google_places_parses_price_level_string_to_symbol`
+- New test: `google_places_parses_reviews_up_to_five`
+- New test: `google_places_absent_new_fields_produce_absent_datapoints`
+
+### V2.7.2 Unit tests (renderer)
+
+- New test: `terminal_detail_panel_renders_all_present_fields`
+- New test: `terminal_detail_panel_omits_absent_fields`
+- New test: `terminal_no_detail_flag_output_identical_to_v1`
+
+### V2.7.3 Acceptance test
+
+- AS-006: `--detail` flag produces extended output; at least one competitor has non-empty opening hours or a review (wiremock fixture with populated fields)
+
+### V2.7.4 Live E2E requirement
+
+Before declaring V2 complete: run `competitor-spy --industry pilates --location "Neulengbach, Austria" --radius 50 --detail` with a freshly built release binary and confirm at least one competitor displays non-empty opening hours or a review in the terminal output.
+
+## V2.8 Stage 2 Approval (V2)
+
+- Approved by: Team Lead Agent (delegated; per PROJECT_BRIEF.md §8.2 — full delegation to Team Lead for all stages)
+- Approval date: 2026-03-22
+- Notes: Spec frozen. Track A only. V1 output unchanged when `--detail` absent. Proceed to Stage 3 task planning.

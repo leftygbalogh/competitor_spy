@@ -319,6 +319,133 @@ _(none yet)_
 
 ## Stage 3 Approval
 
-- Approved by: [Team Lead Agent or designated approver]
-- Approval date: [YYYY-MM-DD UTC]
-- Notes: Planning complete; tasks authorized for build.
+- Approved by: Team Lead Agent (full delegation per PROJECT_BRIEF.md §8.2)
+- Approval date: 2026-03-22
+- Notes: V1 tasks T-000 through T-018 complete. V2 tasks T-019 through T-024 planned and authorized for build. TDD discipline applies throughout; no implementation before the failing test.
+
+---
+
+# V2 Task List — Competitor Spy v2.0
+
+## V2 Planning Metadata
+
+- Plan ID: CSPY-PLAN-002
+- Source spec: `FORMAL_SPEC.md` CSPY-SPEC-002 v2.0, approved 2026-03-22
+- Mode: Brownfield extension
+- Date: 2026-03-22 UTC
+- Approver: Team Lead Agent (full delegation)
+- Status: APPROVED — Team Lead Agent, 2026-03-22
+
+---
+
+## V2 Conventions
+
+- All V1 tasks remain done. V2 tasks are numbered T-019 onwards.
+- TDD: failing test written before implementation code, per V1 discipline.
+- Per V1 feedback lesson: adapter unit tests must assert on outgoing request headers/body, not just response parsing.
+- Per V1 feedback lesson: before any live E2E handover, rebuild release binary from HEAD and confirm binary timestamp post-dates last commit.
+
+---
+
+### T-019: Extend BusinessProfile and PlaceReview domain types
+
+- Source: FORMAL_SPEC.md V2 §V2.3
+- Status: Not started
+- Dependencies: T-002 (BusinessProfile), T-003 (SearchRun)
+- Output:
+  - `competitor_spy_domain/src/profile.rs` — add `opening_hours: DataPoint<Vec<String>>`, `price_level: DataPoint<Option<u8>>`, `editorial_summary: DataPoint<String>`, `reviews: DataPoint<Vec<PlaceReview>>`, `rating: DataPoint<f64>`, `user_rating_count: DataPoint<u32>`, `place_types: DataPoint<Vec<String>>`
+  - New value type `PlaceReview { text: String, rating: u8, relative_time: String }` in `profile.rs`
+  - Unit tests: construct profile with all new fields present; construct with all absent; verify Absent DataPoints
+- Evidence: `cargo test -p competitor_spy_domain` — all prior tests still pass; new field tests pass
+- Chronicle: [C]
+
+---
+
+### T-020: Expand Google Places adapter — field mask and response parsing
+
+- Source: FORMAL_SPEC.md V2 §V2.4
+- Status: Not started
+- Dependencies: T-019, T-012 (existing google_places adapter)
+- Output:
+  - `competitor_spy_adapters/src/google_places.rs`:
+    - `X-Goog-FieldMask` header extended with `regularOpeningHours.weekdayDescriptions`, `priceLevel`, `editorialSummary`, `reviews`
+    - `GooglePlace` struct gains `regular_opening_hours`, `price_level`, `editorial_summary`, `reviews` fields (all `Option<_>`)
+    - `place_to_record()` maps new fields into `BusinessProfile` as DataPoints
+    - Price level string enum mapped to `u8` (1–4) per §V2.4.3
+  - Unit tests (per V1 feedback — header and body assertions required):
+    - `google_places_request_contains_expanded_field_mask` — assert `X-Goog-FieldMask` header value in outgoing request contains all new field paths
+    - `google_places_parses_opening_hours`
+    - `google_places_parses_price_level_string_to_u8`
+    - `google_places_parses_reviews_up_to_five`
+    - `google_places_absent_new_fields_yield_absent_datapoints`
+- Evidence: `cargo test -p competitor_spy_adapters` — all prior + all new tests pass
+- Chronicle: [C]
+
+---
+
+### T-021: Add `--detail` CLI flag
+
+- Source: FORMAL_SPEC.md V2 §V2.5
+- Status: Not started
+- Dependencies: T-016 (CLI wiring)
+- Output:
+  - `competitor_spy_cli/src/main.rs` — `--detail` boolean flag added to `Args` struct via clap derive
+  - Flag threaded through to `RunConfig` or equivalent and passed to both renderers
+  - Unit test: `detail_flag_defaults_to_false`; `detail_flag_parsed_true_when_present`
+- Evidence: `cargo test -p competitor_spy_cli` — flag tests pass; `competitor-spy --help` shows `--detail`
+- Chronicle: [C]
+
+---
+
+### T-022: Terminal renderer — per-competitor detail panel
+
+- Source: FORMAL_SPEC.md V2 §V2.6.1
+- Status: Not started
+- Dependencies: T-019, T-021, T-014 (terminal renderer)
+- Output:
+  - `competitor_spy_output/src/terminal.rs` — when `detail=true`, render indented detail panel below each ranked row; absent fields omitted from panel
+  - Unit tests:
+    - `terminal_detail_panel_renders_opening_hours`
+    - `terminal_detail_panel_renders_price_level_symbol`
+    - `terminal_detail_panel_renders_reviews`
+    - `terminal_detail_panel_omits_absent_fields`
+    - `terminal_no_detail_flag_output_unchanged_from_v1`
+- Evidence: `cargo test -p competitor_spy_output` — all tests pass; snapshot of detail panel output matches spec §V2.6.1 format
+- Chronicle: [C]
+
+---
+
+### T-023: PDF renderer — extended competitor section
+
+- Source: FORMAL_SPEC.md V2 §V2.6.2
+- Status: Not started
+- Dependencies: T-019, T-021, T-015 (PDF renderer)
+- Output:
+  - `competitor_spy_output/src/pdf.rs` — when `detail=true`, each competitor block gains opening hours, price level, description, rating, reviews, type tags; absent fields omitted
+  - Unit tests:
+    - `pdf_detail_section_renders_when_flag_set`
+    - `pdf_detail_section_absent_when_flag_not_set`
+    - `pdf_absent_fields_omitted_from_detail_section`
+- Evidence: `cargo test -p competitor_spy_output` — all tests pass; manually verified generated PDF contains detail section in at least one competitor block (wiremock fixture)
+- Chronicle: [C]
+
+---
+
+### T-024: V2 acceptance test and live E2E
+
+- Source: FORMAL_SPEC.md V2 §V2.7.3 and §V2.7.4
+- Status: Not started
+- Dependencies: T-019 through T-023
+- Output:
+  - `competitor_spy_cli/tests/acceptance.rs` — AS-006: `--detail` flag with wiremock fixture containing opening hours and one review; assert detail panel appears in stdout capture; assert PDF written
+  - Live E2E: rebuild release binary from HEAD, confirm timestamp, run `competitor-spy --industry pilates --location "Neulengbach, Austria" --radius 50 --detail`; confirm at least one competitor shows non-empty opening hours or review in terminal output (`outcome="success" record_count>0` for google_places)
+- Evidence: `cargo test` — 200+ tests pass including AS-006; live run log showing detail panel with real data
+- Chronicle: [C]
+
+---
+
+## V2 Stage 3 Approval
+
+- Approved by: Team Lead Agent (delegated)
+- Approval date: 2026-03-22
+- Notes: Six tasks T-019 through T-024 cover domain extension, adapter expansion, CLI flag, two renderers, and acceptance + live E2E. No code work begins until this approval is recorded. V1 output contract preserved when `--detail` is absent.

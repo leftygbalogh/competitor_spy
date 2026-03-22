@@ -106,17 +106,12 @@ Write-Step "Storing key in encrypted credential store..."
 
 $env:CSPY_CREDENTIAL_PASSPHRASE = $Pass1
 
-try {
-    $ApiKey | & $Binary credentials set google_places 2>&1 | ForEach-Object { Write-Host "  $_" }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Fail "Failed to store credential (exit $LASTEXITCODE)."
-        exit 1
-    }
-    Write-OK "Key stored."
-} catch {
-    Write-Fail "Unexpected error: $_"
+$ApiKey | & $Binary credentials set google_places
+if ($LASTEXITCODE -ne 0) {
+    Write-Fail "Failed to store credential (exit $LASTEXITCODE)."
     exit 1
 }
+Write-OK "Key stored."
 
 # ---------------------------------------------------------------------------
 # Step 3: Verify list

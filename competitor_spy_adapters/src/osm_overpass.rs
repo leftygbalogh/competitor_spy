@@ -91,6 +91,54 @@ impl OsmOverpassAdapter {
             pacing: PacingPolicy::from_seed(0, true),
         }
     }
+
+    /// Execute a single Overpass QL string and return parsed records or a failure code.
+    /// A reqwest-level timeout of 35 s is applied so the client always terminates even
+    /// if the Overpass server stalls before its own `[timeout:N]` fires.
+    async fn execute_ql(&self, ql: String, label: &'static str) -> Result<Vec<RawRecord>, ReasonCode> {
+        let response = match self.client
+            .post(&self.base_url)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(format!("data={}", urlencoded(&ql)))
+            .timeout(std::time::Duration::from_secs(35))
+            .send()
+            .await
+        {
+            Ok(r) => r,
+            Err(_) => {
+                warn!(event = "overpass_query", label = label, outcome = "timeout");
+                return Err(ReasonCode::Timeout);
+            }
+        };
+
+        let status = response.status();
+        if status.is_client_error() { return Err(ReasonCode::Http4xx); }
+        if status.is_server_error() { return Err(ReasonCode::Http5xx); }
+
+        let body = match response.text().await {
+            Ok(t) => t,
+            Err(_) => return Err(ReasonCode::Timeout),
+        };
+
+        // Detect Overpass server-side errors (rate limit, timeout, memory limit).
+        // These arrive as HTTP 200 with a "remark" field and empty elements.
+        if let Ok(serde_json::Value::Object(ref map)) = serde_json::from_str::<serde_json::Value>(&body) {
+            if let Some(remark) = map.get("remark").and_then(|r| r.as_str()) {
+                warn!(event = "overpass_query", label = label, outcome = "remark", remark = remark);
+                return Err(ReasonCode::Http5xx);
+            }
+        }
+
+        let overpass: OverpassResponse = match serde_json::from_str(&body) {
+            Ok(r) => r,
+            Err(e) => {
+                warn!(event = "overpass_query", label = label, outcome = "parse_error", error = %e);
+                return Err(ReasonCode::ParseError);
+            }
+        };
+
+        Ok(overpass.elements.into_iter().filter_map(element_to_record).collect())
+    }
 }
 
 #[async_trait]
@@ -113,7 +161,8 @@ impl SourceAdapter for OsmOverpassAdapter {
         self.pacing.pace().await;
 
         let radius_m = radius.km_value() * 1000;
-        let ql_query = build_overpass_query(&query.industry, location.latitude, location.longitude, radius_m);
+        let lat = location.latitude;
+        let lon = location.longitude;
 
         // Audit: log URL as hostname+path only — no query params (§6.3)
         info!(
@@ -122,59 +171,32 @@ impl SourceAdapter for OsmOverpassAdapter {
             url = %self.base_url
         );
 
-        let response = match self.client
-            .post(&self.base_url)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .body(format!("data={}", urlencoded(&ql_query)))
-            .send()
-            .await
-        {
-            Ok(r) => r,
-            Err(_) => {
-                warn!(event = "adapter_result", adapter_id = "osm_overpass", outcome = "timeout");
-                return failed_result(ReasonCode::Timeout);
+        // Run both search strategies concurrently:
+        //   • tag query  — indexed exact-match (fast; works where OSM uses standard tags)
+        //   • name query — name-regex best-effort (catches businesses tagged by name;
+        //                  may timeout on dense urban areas — silently ignored if so)
+        let tag_ql = build_tag_query(&query.industry, lat, lon, radius_m);
+        let name_ql = build_name_query(&query.industry, lat, lon, radius_m);
+        let (tag_outcome, name_outcome) = tokio::join!(
+            self.execute_ql(tag_ql, "tag"),
+            self.execute_ql(name_ql, "name"),
+        );
+
+        let records = match (tag_outcome, name_outcome) {
+            (Ok(tag_recs), Ok(name_recs)) => merge_records(tag_recs, name_recs),
+            (Ok(tag_recs), Err(e)) => {
+                warn!(event = "osm_overpass_name_query", outcome = "ignored", reason = ?e);
+                tag_recs
+            }
+            (Err(e), Ok(name_recs)) => {
+                warn!(event = "osm_overpass_tag_query", outcome = "ignored", reason = ?e);
+                name_recs
+            }
+            (Err(code), Err(_)) => {
+                warn!(event = "adapter_result", adapter_id = "osm_overpass", outcome = "failed");
+                return failed_result(code);
             }
         };
-
-        let status = response.status();
-        if status.is_client_error() {
-            warn!(event = "adapter_result", adapter_id = "osm_overpass", outcome = "http_4xx", code = status.as_u16());
-            return failed_result(ReasonCode::Http4xx);
-        }
-        if status.is_server_error() {
-            warn!(event = "adapter_result", adapter_id = "osm_overpass", outcome = "http_5xx", code = status.as_u16());
-            return failed_result(ReasonCode::Http5xx);
-        }
-
-        let body = match response.text().await {
-            Ok(t) => t,
-            Err(_) => {
-                warn!(event = "adapter_result", adapter_id = "osm_overpass", outcome = "timeout");
-                return failed_result(ReasonCode::Timeout);
-            }
-        };
-
-        // Detect Overpass server-side errors (rate limit, timeout, memory limit).
-        // These arrive as HTTP 200 with a "remark" field and empty elements.
-        if let Ok(serde_json::Value::Object(ref map)) = serde_json::from_str::<serde_json::Value>(&body) {
-            if let Some(remark) = map.get("remark").and_then(|r| r.as_str()) {
-                warn!(event = "adapter_result", adapter_id = "osm_overpass", outcome = "overpass_remark", remark = remark);
-                return failed_result(ReasonCode::Http5xx);
-            }
-        }
-
-        let overpass: OverpassResponse = match serde_json::from_str(&body) {
-            Ok(r) => r,
-            Err(e) => {
-                warn!(event = "adapter_result", adapter_id = "osm_overpass", outcome = "parse_error", error = %e);
-                return failed_result(ReasonCode::ParseError);
-            }
-        };
-
-        let records: Vec<RawRecord> = overpass.elements
-            .into_iter()
-            .filter_map(|el| element_to_record(el))
-            .collect();
 
         info!(
             event = "adapter_result",
@@ -194,18 +216,10 @@ impl SourceAdapter for OsmOverpassAdapter {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/// Build an Overpass QL query searching for the industry keyword near a location.
-///
-/// Uses indexed exact-match (`=`) on five OSM tag categories: amenity, shop,
-/// leisure, sport, and tourism.  Exact-match queries use OSM's key-value index
-/// and complete in milliseconds, unlike regex (`~`) which requires a full scan
-/// and times out on the public Overpass API for dense areas.
-///
-/// The keyword is normalized to lowercase with spaces replaced by underscores
-/// to match OSM tag value conventions (e.g., "yoga studio" → "yoga_studio",
-/// "cafe" → "cafe").
-fn build_overpass_query(industry: &str, lat: f64, lon: f64, radius_m: u32) -> String {
-    // Normalize: strip QL-special chars, lowercase, spaces→underscores (OSM convention)
+/// Indexed exact-match query over five OSM tag categories: amenity, shop, leisure,
+/// sport, and tourism.  Uses the key-value index — fast even on dense city data.
+/// Keyword is normalized: lowercase, spaces→underscores (OSM tag value convention).
+fn build_tag_query(industry: &str, lat: f64, lon: f64, radius_m: u32) -> String {
     let keyword = sanitize_ql_string(industry).to_lowercase().replace(' ', "_");
     format!(
         r#"[out:json][timeout:30];
@@ -222,6 +236,41 @@ out body center qt;"#,
         lat = lat,
         lon = lon
     )
+}
+
+/// Name-regex query: searches any OSM node/way/relation whose `name` tag
+/// contains the keyword (case-insensitive).  Catches businesses tagged by
+/// name rather than by type (e.g., "Pilates und mehr").
+///
+/// Uses a short Overpass timeout (20 s) and a 1 MB maxsize cap so it fails
+/// fast on dense city data instead of blocking; the caller ignores this
+/// error and falls back to tag-query results.
+fn build_name_query(industry: &str, lat: f64, lon: f64, radius_m: u32) -> String {
+    let keyword = sanitize_ql_string(industry);
+    format!(
+        r#"[out:json][timeout:20][maxsize:1048576];
+nwr["name"~"{keyword}",i](around:{radius_m},{lat},{lon});
+out body center qt;"#,
+        keyword = keyword,
+        radius_m = radius_m,
+        lat = lat,
+        lon = lon
+    )
+}
+
+/// Merge two record lists, deduplicating by `osm_id`.
+/// Tag-query records are listed first; name-query records append only when
+/// their osm_id has not already been seen.
+fn merge_records(tag_recs: Vec<RawRecord>, name_recs: Vec<RawRecord>) -> Vec<RawRecord> {
+    let mut seen = std::collections::HashSet::new();
+    let mut merged = Vec::with_capacity(tag_recs.len() + name_recs.len());
+    for rec in tag_recs.into_iter().chain(name_recs) {
+        let id = rec.fields.get("osm_id").cloned().unwrap_or_default();
+        if seen.insert(id) {
+            merged.push(rec);
+        }
+    }
+    merged
 }
 
 /// Strip characters that have special meaning in Overpass QL regex values.
@@ -555,8 +604,8 @@ mod tests {
     }
 
     #[test]
-    fn build_overpass_query_contains_keyword_and_radius() {
-        let q = build_overpass_query("yoga studio", 52.3676, 4.9041, 10000);
+    fn build_tag_query_contains_keyword_and_radius() {
+        let q = build_tag_query("yoga studio", 52.3676, 4.9041, 10000);
         // Keyword is lowercased with spaces→underscores (OSM tag value convention)
         assert!(q.contains("yoga_studio"), "normalized keyword missing from query");
         assert!(q.contains("10000"), "radius missing from query");
@@ -568,7 +617,34 @@ mod tests {
         assert!(q.contains("\"shop\"=\"yoga_studio\""), "shop exact-match missing");
         assert!(q.contains("\"leisure\"=\"yoga_studio\""), "leisure exact-match missing");
         assert!(q.contains("\"sport\"=\"yoga_studio\""), "sport exact-match missing");
-        // Must NOT use slow regex operator on public Overpass
-        assert!(!q.contains("name\"~"), "slow name regex must not be present");
+        // Must NOT use slow regex operator
+        assert!(!q.contains("~"), "slow regex must not be present in tag query");
+    }
+
+    #[test]
+    fn build_name_query_contains_keyword_and_radius() {
+        let q = build_name_query("pilates", 48.197, 15.907, 5000);
+        assert!(q.contains("pilates"), "keyword missing from name query");
+        assert!(q.contains("5000"), "radius missing from name query");
+        assert!(q.contains("name\"~\"pilates\""), "name regex missing");
+        assert!(q.contains("[maxsize:"), "maxsize cap missing from name query");
+        assert!(q.contains("[timeout:20]"), "short timeout missing from name query");
+    }
+
+    #[test]
+    fn merge_records_deduplicates_by_osm_id() {
+        fn make_rec(id: &str, name: &str) -> RawRecord {
+            let mut fields = std::collections::HashMap::new();
+            fields.insert("osm_id".to_string(), id.to_string());
+            fields.insert("name".to_string(), name.to_string());
+            RawRecord { adapter_id: "osm_overpass".to_string(), fields }
+        }
+        let tag_recs = vec![make_rec("1", "A"), make_rec("2", "B")];
+        let name_recs = vec![make_rec("2", "B-dup"), make_rec("3", "C")]; // 2 is duplicate
+        let merged = merge_records(tag_recs, name_recs);
+        assert_eq!(merged.len(), 3);
+        // Tag record for id=2 should win (tag comes first)
+        assert_eq!(merged[1].fields["name"], "B");
+        assert_eq!(merged[2].fields["name"], "C");
     }
 }

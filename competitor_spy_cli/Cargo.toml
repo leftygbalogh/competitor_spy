@@ -20,3 +20,4 @@ tokio = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 log = { workspace = true }
+chrono = { workspace = true }

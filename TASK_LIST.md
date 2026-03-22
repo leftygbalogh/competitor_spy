@@ -230,7 +230,7 @@
 ### T-015: PDF report renderer
 
 - Source: FORMAL_SPEC.md §4.6, §6.2, §6.5, §9.2 (PDF parse test)
-- Status: Not started
+- Status: DONE
 - Dependencies: T-014
 - Output:
   - `competitor_spy_output/src/pdf.rs` — formats `SearchRun` to PDF via `printpdf`; A4 portrait

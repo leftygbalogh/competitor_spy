@@ -9,3 +9,4 @@ pub mod profile;
 pub mod run;
 pub mod ranking;
 pub mod scoring;
+pub mod normalizer;

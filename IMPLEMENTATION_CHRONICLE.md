@@ -442,3 +442,69 @@ credentials: &HashMap<String,String> keyed by adapter_id(). Each task receives c
 
 cargo test -p competitor_spy_adapters -- 67 passed, 0 failed.
 Registry tests: registry_starts_empty, register_increases_count, collect_all_returns_one_result_per_adapter, collect_all_results_are_in_registration_order, collect_all_run_continues_when_one_adapter_fails, collect_all_empty_registry_returns_empty, collect_all_passes_credential_to_adapter, collect_all_passes_none_credential_when_absent_from_map, collect_all_all_adapters_fail_returns_all_failed_results.
+
+## Entry CHR-CSPY-014
+
+- Task: T-014
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md section 4.6, section 6.5, section 9.2
+
+### Table layout choices (RECONSTRUCTION-CRITICAL)
+
+Fixed-width column table printed to stdout. Columns (width in chars): Rank(4), Name(28), Distance(9), Address(30), Phone(16), Website(28), Keyword%(9), Visibility%(11). Cells padded with left-align spaces to exact width. Long values truncated at width-1 chars with Unicode ellipsis (U+2026). Separator line: dashes between header and data rows.
+
+### Absent field rendering
+
+DataPoint with Confidence::Absent -> value is None -> rendered as "--" in every column.
+
+### Footer
+
+Failed SourceResult (status.is_failed()) listed after table: "Failed sources:" header, then one line per failed adapter: "  - <adapter_id> : <ReasonCode>". No footer section when all sources succeed.
+
+### Scores
+
+keyword_score and visibility_score are 0.0-1.0 floats; displayed as integer percentage: (score * 100.0).round() as u32 followed by "%".
+
+### Distances
+
+distance_km displayed as "{:.2} km" (2 decimal places).
+
+### Public API
+
+render<W: Write>(run, out) -> io::Result<()>. render_stdout(run) -> io::Result<()>. format_run(run) -> String (pure; used in tests).
+
+### Evidence
+
+cargo test -p competitor_spy_output -- 15 passed, 0 failed (terminal module).
+Tests: header line, location line, radius line, competitor names, rank numbers, distance format, keyword/visibility%, absent->"--", footer with failed source, no footer when all succeed, empty->message, column headers, long name truncated with ellipsis, write-to-writer, snapshot.
+
+## Entry CHR-CSPY-015
+
+- Task: T-015
+- Date: 2026-03-21
+- Requirement: FORMAL_SPEC.md section 4.6, section 6.2, section 6.5, section 9.2
+
+### Table layout approach (RECONSTRUCTION-CRITICAL)
+
+Uses printpdf 0.7 with BuiltinFont::Helvetica (body) and BuiltinFont::HelveticaBold (headings). A4 portrait (210x297mm). Column x-positions (Mm): Rank(10), Name(30), Distance(70), Address(95), Phone(140), Keyword%(170), Visibility%(185). Row height: 6mm. Long cell values truncated to max chars then ".." suffix (ASCII ellipsis, not Unicode, to avoid encoding issues). Font sizes: title=16pt, section headers/col headers=8-10pt, body=8pt.
+
+### Pagination strategy
+
+MVP: render up to the page bottom (y < 15mm stops row output). No multi-page support in v1. Documented as a known limitation.
+
+### Filename format
+
+competitor_spy_report_YYYYMMDD_HHMMSS_UTC.pdf using run.completed_at (falls back to started_at). chrono format string: "%Y%m%d_%H%M%S".
+
+### PDF validity
+
+Output starts with %PDF- magic bytes (verified in test). File size always > 500 bytes for non-trivial runs.
+
+### Public API
+
+render_to_bytes(run) -> io::Result<Vec<u8>>. render_to_writer<W: Write+Seek>(run, w) -> io::Result<()>. render_to_dir(run, path) -> io::Result<PathBuf>. pdf_filename(run) -> String.
+
+### Evidence
+
+cargo test -p competitor_spy_output -- 21 passed, 0 failed (pdf + terminal modules).
+PDF tests: filename format, non-empty bytes, valid %PDF- header, >500 bytes, file created with correct name, empty competitors does not panic.

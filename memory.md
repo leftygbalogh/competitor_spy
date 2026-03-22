@@ -1170,3 +1170,19 @@ Next step: None pending.
 - Open questions: None.
 - Blockers: None.
 - Next step: Commit T-001, then begin T-002 (BusinessProfile, DataPoint, Confidence, Competitor).
+
+## 2026-03-22 Status Snapshot — Stage 5 Complete
+
+- Timestamp: 2026-03-22
+- Current stage: Stage 5 — Verify COMPLETE → entering Stage 6 Release
+- Completed since last update:
+  - T-016 (normalizer + CLI entry point), T-017 (acceptance tests AS-001 to AS-005), T-018 (live end-to-end run)
+  - Stage 5 evidence artifacts produced: `docs/evidence/environment-matrix.md`, `docs/evidence/traceability.md`
+  - RELEASE_CHECKLIST.md Stage 5 section filled and approved (2026-03-22)
+  - DEF-001 (Overpass URL bug) fixed and regressed
+  - Final commit: c07d2a1
+- In progress: Stage 6 Release
+- Decisions made: Stage 5 self-approved by Team Lead Agent per delegated authority (PROJECT_BRIEF.md §8.2). Linux environment not tested; documented as release risk in environment-matrix.md.
+- Open questions: None.
+- Blockers: None.
+- Next step: Stage 6 Release — update project-specific docs (GETTING_STARTED.md, RUNBOOK_KNOWN_FAILURES.md, OPERATIONS_AND_ROLLBACK.md, POST_RELEASE_MONITORING.md, CHANGELOG.md); create docs/adr/; verify push target before publish.

@@ -12,6 +12,7 @@ Spec: CSPY-SPEC-001 v1.0. Project mode: Greenfield. Implementation: Rust workspa
 - [x] Escaped defect DEF-001 (Overpass URL) fixed + regressed in AS-001 (commit `c07d2a1`)
 - [x] Maintainability seams verified: SourceAdapter trait, injectable URLs, pluggable output, pacing seed
 - [x] Reliability failure paths exercised: AS-002 (one adapter fail), AS-005 (all adapters fail)
+- [x] **Release binary rebuilt from current HEAD immediately before live E2E run** (compiled languages: confirm binary timestamp post-dates last commit)
 - [x] Live end-to-end run: exit 0, PDF in `docs/evidence/sessions/` (T-018)
 - [x] No extra features/configuration added beyond FORMAL_SPEC.md §2 scope
 - [x] Secrets redaction verified: 6 redact tests in competitor_spy_telemetry

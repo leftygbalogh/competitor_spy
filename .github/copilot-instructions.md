@@ -37,6 +37,7 @@ At session start in projects using this template:
 - Routine remit tasks can proceed without explicit permission.
 - Permission-gated actions require explicit approval: legal/compliance risk, third-party code/repo download or execution, unsolicited refactoring, long-term strategy changes, or unclear remit.
 - Before any push operation, run `git remote -v` and explicitly confirm which remote and branch should receive the push; if uncertain, ask and wait for confirmation.
+- **For compiled languages: before any live E2E test, exploratory testing handover, or user-facing demo, always rebuild the release binary from current HEAD and verify the binary timestamp post-dates the last commit. Never run a live test against a binary whose build predates recent commits.**
 - When governance values conflict, present the tradeoff briefly and recommend one path; the user may accept or redirect.
 - When blocked, report: blocker, impact, what was attempted, and the smallest user decision or input needed.
 

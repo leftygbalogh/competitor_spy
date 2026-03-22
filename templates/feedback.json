@@ -161,6 +161,17 @@
     },
     {
       "project_id": "competitor-spy-v1-2026-03-22",
+      "stage": 5,
+      "role": "rust-backend-specialist",
+      "doc": "RELEASE_CHECKLIST.md",
+      "subsection": "Stage 5 Verify Results",
+      "change_type": "add",
+      "before": "Live E2E run item does not require a fresh release build immediately before execution",
+      "after": "For compiled languages, add an explicit checklist step before every live E2E or exploratory test handover: rebuild the release binary from the current HEAD and confirm the binary timestamp post-dates the last commit. A stale binary silently runs old code and produces misleading test results.",
+      "reasoning": "During V1 post-release, the Overpass URL fix was committed but the release binary was never rebuilt. The live run still used the old binary showing the unfixed URL in logs. This wasted a full debugging cycle before the root cause (stale binary, not broken code) was identified."
+    },
+    {
+      "project_id": "competitor-spy-v1-2026-03-22",
       "stage": 1,
       "role": "greenfield-domain-discovery-expert",
       "doc": "00_INTERACTION_GUARDRAILS.md / copilot-instructions.md",

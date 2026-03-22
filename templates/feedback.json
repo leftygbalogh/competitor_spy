@@ -102,6 +102,63 @@
       "before": null,
       "after": "Explicit artifact completion and feedback logging checks",
       "reasoning": "Ensures process closes with reusable governance learnings."
+    },
+
+    {
+      "project_id": "competitor-spy-v1-2026-03-22",
+      "stage": 2,
+      "role": "greenfield-formal-spec-author",
+      "doc": "FORMAL_SPEC.md",
+      "subsection": "Source Adapter Contracts",
+      "change_type": "improve",
+      "before": "Adapters listed with base URL only; accepted field mask and endpoint path not specified in the spec",
+      "after": "Recommend: spec should declare the exact API endpoint, required field mask, and expected response schema per adapter so that wrong-endpoint defects (DEF-004, DEF-005) are caught at spec review, not post-release",
+      "reasoning": "DEF-004 (wrong Google Places domain) and DEF-005 (wrong endpoint searchNearby vs searchText, discarded keyword) both survived all 198 tests and were only caught in live E2E. The spec had no contract for the HTTP path or request body shape."
+    },
+    {
+      "project_id": "competitor-spy-v1-2026-03-22",
+      "stage": 4,
+      "role": "rust-backend-specialist",
+      "doc": "competitor_spy_adapters/src/google_places.rs",
+      "subsection": "build_request_body",
+      "change_type": "improve",
+      "before": "let _ = industry; — industry keyword silently discarded; not caught by unit tests because tests used wiremock and never validated the request body content",
+      "after": "Recommend: adapter unit tests should assert on the serialised request body (textQuery field present and matches input), not just on the HTTP path and response parsing",
+      "reasoning": "The industry keyword was completely ignored in V1. Tests passed because they mocked the response without checking the request payload. A request-body assertion test would have caught this immediately."
+    },
+    {
+      "project_id": "competitor-spy-v1-2026-03-22",
+      "stage": 5,
+      "role": "tdd-navigator",
+      "doc": "RELEASE_CHECKLIST.md",
+      "subsection": "Live E2E run",
+      "change_type": "improve",
+      "before": "Live E2E item just checks exit 0 and PDF exists; does not assert non-zero record_count per adapter",
+      "after": "Recommend: live E2E checklist item should require outcome=success AND record_count>0 for at least one paid-API adapter before Stage 5 close; 0-record outcomes from mocked APIs can mask wrong-endpoint or wrong-body bugs",
+      "reasoning": "DEF-002 and DEF-005 both produced record_count=0 on the live run, which the checklist did not flag as a failure condition."
+    },
+    {
+      "project_id": "competitor-spy-v1-2026-03-22",
+      "stage": 4,
+      "role": "powershell-automation-engineer",
+      "doc": "scripts/setup_google_places.ps1",
+      "subsection": "credential set step",
+      "change_type": "improve",
+      "before": "try/catch wrapping credential set caused false-positive failure because competitor-spy.exe writes success output to stderr via tracing; $ErrorActionPreference=Stop triggered on stderr output",
+      "after": "Recommend: document in the template that on Windows, native CLI tools writing to stderr do not constitute PowerShell errors; wrap only specific $LASTEXITCODE checks, not try/catch, for external process calls",
+      "reasoning": "Caused two debugging iterations on the setup script that would have been avoided with this pattern documented."
+    },
+    {
+      "project_id": "competitor-spy-v1-2026-03-22",
+      "stage": 6,
+      "role": "team-lead",
+      "doc": "RELEASE_CHECKLIST.md",
+      "subsection": "Stage 6 Release",
+      "change_type": "improve",
+      "before": "No explicit step to log feedback entries before close",
+      "after": "Add checklist item: 'Feedback entries written to templates/feedback.json before Stage 6 close' — this was missed in Competitor Spy V1 and had to be back-filled at V2 discovery start",
+      "reasoning": "Process improvement loop only works if feedback is captured while memory is fresh. Missing it at close risks losing valuable lessons."
     }
   ]
 }
+

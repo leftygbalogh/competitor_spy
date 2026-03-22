@@ -503,3 +503,17 @@ Can the team-lead not approve this?
 ### Prompt 009
 I hereby explicitly hand over approver rights for all subsequent stages to the Team Lead Agent. If he is in doubt, he should consult the Oracle Agent or the Claire Voyant Agent and then approve.
 [Full stage approval delegation granted to Team Lead Agent for all stages including Stage 6. Consultation protocol added (Oracle for policy, Claire Voyant for risk). PROJECT_BRIEF.md updated. Team Lead immediately approves Stage 3. Stage 4 Build begins.]
+
+## 2026-03-22
+
+### Prompt 010
+[V1 post-release monitoring. DEF-002 through DEF-005 fixed and committed. Live E2E confirmed: 29 pilates competitors returned for Neulengbach Austria 50km. CHANGELOG updated. Pushed to origin.]
+
+### Prompt 011
+Okay, then, save, commit, push, and then let's start over again, we will take V1 as legacy and extend the functionality. Get the original brief specs opened and let me know when you are ready.
+
+### Prompt 012
+I want to expand the details of the intelligence we gather about these businesses. It would be important to know if they have pricing information, if they have info about the kinds of classes they hold, if it is pilates for example. If they have customer testimonials. If they have special offers or discounts. Opening hours. If feasible, what is their menu and website structure. Would you have any more suggestions?
+
+### Prompt 013
+track A in V2, track B in V3

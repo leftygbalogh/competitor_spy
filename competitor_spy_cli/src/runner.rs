@@ -182,7 +182,7 @@ pub async fn run_with_urls(
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-fn credential_store_path() -> PathBuf {
+pub fn credential_store_path() -> PathBuf {
     #[cfg(windows)]
     {
         let appdata = std::env::var("APPDATA").unwrap_or_else(|_| ".".to_string());

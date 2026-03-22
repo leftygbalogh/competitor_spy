@@ -161,8 +161,17 @@
     },
     {
       "project_id": "competitor-spy-v1-2026-03-22",
-      "stage": 5,
-      "role": "rust-backend-specialist",
+      "stage": 5,      "role": "tdd-driver",
+      "doc": "00_INTERACTION_GUARDRAILS.md / copilot-instructions.md",
+      "subsection": "Core Behavior",
+      "change_type": "add",
+      "before": "No rule preventing the agent from declaring a fix complete before running a verification test",
+      "after": "During joint debugging sessions, the agent must never declare a fix complete or say 'this is fixed' until it has run a full end-to-end verification and confirmed the outcome with observable evidence (log output, exit code, record count, or other measurable artifact). If a live test cannot be run by the agent (e.g. credential is user-held), the agent must explicitly state this limitation and hand the verification step to the user — it must not imply the fix is done.",
+      "reasoning": "During V1 debugging, the agent said the Google Places 400 error was fixed before running a live test. The fix declaration was premature — the actual live test still showed the error. This required the user to explicitly ask for verification before the agent ran the test."
+    },
+    {
+      "project_id": "competitor-spy-v1-2026-03-22",
+      "stage": 5,      "role": "rust-backend-specialist",
       "doc": "RELEASE_CHECKLIST.md",
       "subsection": "Stage 5 Verify Results",
       "change_type": "add",

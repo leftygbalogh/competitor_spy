@@ -254,6 +254,7 @@ Definition of done:
 - Security and production-readiness loop is complete: identified security/ops risks are converted into mitigation tasks, reflected in specs/runbooks, verified with evidence, and closed before release approval.
 - Repository identity gate is complete before any publish command: remotes are listed, intended push target is explicitly confirmed, and proof is stored in `docs/evidence/release-remote-proof.md`.
 - If multiple remotes exist (or template-clone ancestry makes target uncertain), release remains blocked until owner or delegated approver confirms the exact remote and branch.
+- **Joint post-mortem complete before Stage 6 close.** The agent writes all process improvement feedback entries to `templates/feedback.json` covering the full project (spec gaps, build friction, test strategy issues, tooling lessons, governance gaps). The product owner is then explicitly asked whether they have anything to add. Stage 6 is not approved until both parties have had the opportunity to contribute and the feedback file is committed. This is a mandatory gate, not optional housekeeping.
 
 ## Official Iterative Hardening Loops
 

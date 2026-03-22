@@ -30,7 +30,7 @@ Spec: CSPY-SPEC-001 v1.0. Project mode: Greenfield. Implementation: Rust workspa
 - [x] Push target verified: `git remote -v` → `origin https://github.com/leftygbalogh/competitor_spy.git`
 - [x] Intended remote and branch explicitly stated and approved by product owner (Lefty) before push
 - [x] Release remote proof snapshot saved: `docs/evidence/release-remote-proof.md`
-- [ ] **Feedback entries written to `templates/feedback.json`** covering process improvements learned during this release cycle (must be complete before Stage 6 close)
+- [ ] **Joint post-mortem complete:** agent writes all feedback entries to `templates/feedback.json`; product owner is explicitly asked for additions; both parties confirmed done before Stage 6 is approved closed
 
 ## Stage 5 Approval
 

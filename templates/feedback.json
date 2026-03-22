@@ -161,6 +161,17 @@
     },
     {
       "project_id": "competitor-spy-v1-2026-03-22",
+      "stage": 6,
+      "role": "team-lead",
+      "doc": "02_WORKFLOW_STAGES.md / RELEASE_CHECKLIST.md",
+      "subsection": "Stage 6 Definition of Done",
+      "change_type": "add",
+      "before": "Feedback logging was a single checklist item that could be skipped silently; no joint ceremony, no owner prompt",
+      "after": "Stage 6 close now requires a joint post-mortem: agent writes all feedback entries first, then explicitly asks the product owner whether they have anything to add. Stage 6 approval is blocked until both parties have contributed and the feedback file is committed. This ensures the improvement loop captures both technical and product-owner perspectives.",
+      "reasoning": "In Competitor Spy V1, the post-mortem was not done at Stage 6 close — it had to be back-filled at the start of V2 discovery. The product owner had their own feedback items (remote URL issue, stale binary, verify-before-claiming-fixed, log stream quality) that would have been lost without an explicit prompt. A mandatory joint gate prevents this."
+    },
+    {
+      "project_id": "competitor-spy-v1-2026-03-22",
       "stage": 5,      "role": "tdd-driver",
       "doc": "00_INTERACTION_GUARDRAILS.md / copilot-instructions.md",
       "subsection": "Core Behavior",

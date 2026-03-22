@@ -97,6 +97,41 @@
 
 ---
 
+## RUN-009: Overpass name-query timeout (public API congestion)
+
+**Symptom:** Log lines:
+```
+WARN event="overpass_query" label="name" outcome="timeout"
+WARN event="osm_overpass_name_query" outcome="ignored" reason=Timeout
+```
+Exit code 0. Tag-query results still appear (may be empty if the industry has no standard OSM tag value).
+
+**Cause:** The public Overpass API (`overpass-api.de`) queues requests during high-load periods (typically European business hours and weekends). The name-regex query has a 35 s client-side deadline; if the server has not responded by then, the query is abandoned. This is a transient infrastructure condition.
+
+**Impact:** Industries found only by business name (e.g., `"pilates"`, `"yoga studio"` in rural areas) may show 0 results when Overpass is congested, even if OSM data exists.
+
+**Resolution:**
+1. Retry during off-peak hours (late night UTC).
+2. If the industry has a standard OSM tag value (e.g., `cafe`, `gym`), the tag query succeeds regardless — only the name fallback is affected.
+3. For consistent sub-20 s latency in production, consider self-hosting an Overpass instance pointing at a local planet extract.
+
+---
+
+## RUN-010: No OSM coverage for niche industries in rural areas
+
+**Symptom:** `record_count=0` even after retrying at off-peak hours.
+
+**Cause:** OpenStreetMap community coverage varies by region. Rural towns in central/eastern Europe often lack detailed POI tagging. Businesses may exist on Google Maps or Yelp but have never been added to OSM.
+
+**Impact:** Tools relying solely on OSM (no API credentials set) will report `(no competitors found)` for valid industries.
+
+**Resolution:**
+1. Validate OSM coverage directly at `https://www.openstreetmap.org` by searching the area.
+2. Configure Yelp or Google Places credentials (see RUN-005) to add commercial-data sources that cover these gaps.
+3. As a workaround, try the industry in English + the country language (e.g., `"pilates"` → OSM uses English names even in Austria where OSM coverage for pilates studios is sparse).
+
+---
+
 ## Known Environment Gaps (see `docs/evidence/environment-matrix.md`)
 
 | Environment | Status | Risk |

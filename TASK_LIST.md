@@ -215,7 +215,7 @@
 ### T-014: Terminal report renderer
 
 - Source: FORMAL_SPEC.md §4.6, §6.5, §9.2 (terminal snapshot test)
-- Status: Not started
+- Status: DONE
 - Dependencies: T-005
 - Output:
   - `competitor_spy_output/src/terminal.rs` — formats `SearchRun` to stdout

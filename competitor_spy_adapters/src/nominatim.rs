@@ -59,7 +59,7 @@ pub struct NominatimGeocoder {
 impl NominatimGeocoder {
     pub fn new(base_url: impl Into<String>) -> Self {
         let client = reqwest::Client::builder()
-            .user_agent("competitor-spy/1.0 (contact: admin@example.com)")
+            .user_agent("competitor-spy/1.0 contact:competitor-spy@pm.me")
             .build()
             .expect("failed to build reqwest client");
         Self {
@@ -160,7 +160,7 @@ pub struct NominatimAdapter {
 impl NominatimAdapter {
     pub fn new(base_url: impl Into<String>) -> Self {
         let client = reqwest::Client::builder()
-            .user_agent("competitor-spy/1.0 (contact: admin@example.com)")
+            .user_agent("competitor-spy/1.0 contact:competitor-spy@pm.me")
             .build()
             .expect("failed to build reqwest client");
         Self {

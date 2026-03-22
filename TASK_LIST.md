@@ -245,7 +245,7 @@
 ### T-016: CLI entry point and argument parsing
 
 - Source: FORMAL_SPEC.md §6.1, §7.1 (CLI-to-API mapping), §4.1 (run lifecycle)
-- Status: Not started
+- Status: **DONE** — commit `1ae0cf9`
 - Dependencies: T-008, T-013, T-014, T-015
 - Output:
   - `competitor_spy_cli/src/main.rs` — argument parsing (clap); no domain logic; maps args to domain API
@@ -260,7 +260,7 @@
 ### T-017: End-to-end acceptance tests (AS-001 through AS-005)
 
 - Source: FORMAL_SPEC.md §9.3 (acceptance test table)
-- Status: Not started
+- Status: **DONE** — commit `91deed3`
 - Dependencies: T-016
 - Output:
   - `tests/acceptance/` — 5 acceptance test scenarios driven by CLI binary against mock HTTP servers
@@ -277,7 +277,7 @@
 ### T-018: Live end-to-end run (prototype handback)
 
 - Source: PROJECT_BRIEF.md §7 (prototype handback trigger: first end-to-end run with both outputs)
-- Status: Not started
+- Status: **DONE** — live run 2026-03-22 UTC, exit 0
 - Dependencies: T-017
 - Output:
   - One successful live run against OSM/Overpass with a real location and industry query

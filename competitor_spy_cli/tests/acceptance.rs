@@ -61,7 +61,7 @@ fn google_empty_body() -> serde_json::Value {
 fn all_at(server: &MockServer) -> AdapterUrls {
     AdapterUrls {
         nominatim: server.uri(),
-        osm_overpass: server.uri(),
+        osm_overpass: format!("{}/interpreter", server.uri()),
         yelp: server.uri(),
         google_places: server.uri(),
     }

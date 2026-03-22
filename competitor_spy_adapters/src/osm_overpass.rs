@@ -146,7 +146,24 @@ impl SourceAdapter for OsmOverpassAdapter {
             return failed_result(ReasonCode::Http5xx);
         }
 
-        let overpass: OverpassResponse = match response.json().await {
+        let body = match response.text().await {
+            Ok(t) => t,
+            Err(_) => {
+                warn!(event = "adapter_result", adapter_id = "osm_overpass", outcome = "timeout");
+                return failed_result(ReasonCode::Timeout);
+            }
+        };
+
+        // Detect Overpass server-side errors (rate limit, timeout, memory limit).
+        // These arrive as HTTP 200 with a "remark" field and empty elements.
+        if let Ok(serde_json::Value::Object(ref map)) = serde_json::from_str::<serde_json::Value>(&body) {
+            if let Some(remark) = map.get("remark").and_then(|r| r.as_str()) {
+                warn!(event = "adapter_result", adapter_id = "osm_overpass", outcome = "overpass_remark", remark = remark);
+                return failed_result(ReasonCode::Http5xx);
+            }
+        }
+
+        let overpass: OverpassResponse = match serde_json::from_str(&body) {
             Ok(r) => r,
             Err(e) => {
                 warn!(event = "adapter_result", adapter_id = "osm_overpass", outcome = "parse_error", error = %e);
@@ -178,17 +195,26 @@ impl SourceAdapter for OsmOverpassAdapter {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /// Build an Overpass QL query searching for the industry keyword near a location.
-/// The union searches nodes, ways, and relations with name~<keyword>.
-/// Also searches common amenity/shop/leisure tags for catchall discovery.
+///
+/// Uses indexed exact-match (`=`) on five OSM tag categories: amenity, shop,
+/// leisure, sport, and tourism.  Exact-match queries use OSM's key-value index
+/// and complete in milliseconds, unlike regex (`~`) which requires a full scan
+/// and times out on the public Overpass API for dense areas.
+///
+/// The keyword is normalized to lowercase with spaces replaced by underscores
+/// to match OSM tag value conventions (e.g., "yoga studio" → "yoga_studio",
+/// "cafe" → "cafe").
 fn build_overpass_query(industry: &str, lat: f64, lon: f64, radius_m: u32) -> String {
-    // Escape the industry string for QL regex (strip QL special chars)
-    let keyword = sanitize_ql_string(industry);
+    // Normalize: strip QL-special chars, lowercase, spaces→underscores (OSM convention)
+    let keyword = sanitize_ql_string(industry).to_lowercase().replace(' ', "_");
     format!(
-        r#"[out:json][timeout:25];
+        r#"[out:json][timeout:30];
 (
-  node["name"~"{keyword}",i](around:{radius_m},{lat},{lon});
-  way["name"~"{keyword}",i](around:{radius_m},{lat},{lon});
-  relation["name"~"{keyword}",i](around:{radius_m},{lat},{lon});
+  nwr["amenity"="{keyword}"](around:{radius_m},{lat},{lon});
+  nwr["shop"="{keyword}"](around:{radius_m},{lat},{lon});
+  nwr["leisure"="{keyword}"](around:{radius_m},{lat},{lon});
+  nwr["sport"="{keyword}"](around:{radius_m},{lat},{lon});
+  nwr["tourism"="{keyword}"](around:{radius_m},{lat},{lon});
 );
 out body center qt;"#,
         keyword = keyword,
@@ -531,10 +557,18 @@ mod tests {
     #[test]
     fn build_overpass_query_contains_keyword_and_radius() {
         let q = build_overpass_query("yoga studio", 52.3676, 4.9041, 10000);
-        assert!(q.contains("yoga studio"));
-        assert!(q.contains("10000"));
-        assert!(q.contains("52.3676"));
-        assert!(q.contains("4.9041"));
-        assert!(q.contains("[out:json]"));
+        // Keyword is lowercased with spaces→underscores (OSM tag value convention)
+        assert!(q.contains("yoga_studio"), "normalized keyword missing from query");
+        assert!(q.contains("10000"), "radius missing from query");
+        assert!(q.contains("52.3676"), "lat missing from query");
+        assert!(q.contains("4.9041"), "lon missing from query");
+        assert!(q.contains("[out:json]"), "output format directive missing");
+        // DEF-002: query must use indexed exact-match on category tags (not slow regex)
+        assert!(q.contains("\"amenity\"=\"yoga_studio\""), "amenity exact-match missing");
+        assert!(q.contains("\"shop\"=\"yoga_studio\""), "shop exact-match missing");
+        assert!(q.contains("\"leisure\"=\"yoga_studio\""), "leisure exact-match missing");
+        assert!(q.contains("\"sport\"=\"yoga_studio\""), "sport exact-match missing");
+        // Must NOT use slow regex operator on public Overpass
+        assert!(!q.contains("name\"~"), "slow name regex must not be present");
     }
 }

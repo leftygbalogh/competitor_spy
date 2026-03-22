@@ -1,45 +1,111 @@
-# Runbook for Known Failure Scenarios
+# Runbook — Known Failure Scenarios — Competitor Spy v1.0
 
-## Scenario 1: Stage Transition Denied
+---
 
-- Symptom: Attempt to move to next stage is blocked.
-- Expected action:
-  1. Record denial reason in active stage artifact and `memory.md`.
-  2. Resolve missing approval or missing stage-completion commit.
-  3. Re-run stage gate checks.
+## RUN-001: Exit Code 1 — Invalid radius
 
-## Scenario 2: Verify Traceability Gap
+**Symptom:** `error: invalid value '7' for '--radius <5|10|20|25|50>'`
 
-- Symptom: FR/NFR link to task/test/chronicle is missing.
-- Expected action:
-  1. Mark gap as blocker.
-  2. Update `FORMAL_SPEC.md` traceability matrix.
-  3. Update `TASK_LIST.md` or `IMPLEMENTATION_CHRONICLE.md` links.
-  4. Re-run Verify checklist.
+**Cause:** Radius must be one of 5, 10, 20, 25, or 50 km.
 
-## Scenario 3: Brownfield Confidence Below Threshold
+**Resolution:** Re-run with a valid radius. Example: `--radius 10`
 
-- Symptom: Baseline evidence incomplete or confidence low.
-- Expected action:
-  1. Block new feature commitments.
-  2. Execute allowed actions from Brownfield decision table.
-  3. Re-assess confidence and document in `memory.md`.
+---
 
-## Scenario 4: Logging Drift
+## RUN-002: Exit Code 1 — Geocoding failure (GEO_NO_RESULT)
 
-- Symptom: Missing or stale prompt/status snapshots.
-- Expected action:
-  1. Append missing user prompt to `prompts.md`.
-  2. Add current status snapshot to `memory.md`.
-  3. Commit checkpoint before further stage actions.
+**Symptom:** `[ERROR] geocoding failed: no results returned for location "..."`
 
-## Scenario 5: Stage Collapse Under Detailed Brief
+**Cause:** Nominatim could not resolve the location string.
 
-- Symptom: Agent receives a detailed technical brief and starts coding before Stage 2/3 artifacts and approvals.
-- Expected action:
-  1. Stop implementation immediately.
-  2. Log violation and impact in `memory.md`.
-  3. Revert invalid implementation commits using non-destructive `git revert`.
-  4. Complete missing Stage 1/2/3 artifacts and obtain explicit approvals.
-  5. Restart Stage 4 build from approved task list.
-  6. Append process feedback entry to `templates/feedback.json`.
+**Resolution:**
+1. Check the location string is spelled correctly and is a real place.
+2. Try a more specific location: city + country (e.g. "Berlin, Germany").
+3. Check internet connectivity.
+4. Verify Nominatim is reachable: `curl -A "competitor-spy/1.0" "https://nominatim.openstreetmap.org/search?q=Amsterdam&format=json"`
+
+---
+
+## RUN-003: Nominatim HTTP 403
+
+**Symptom:** `adapter_result adapter_id="nominatim" outcome="http_4xx" code=403`
+
+**Cause:** Nominatim rejected the User-Agent. Nominatim policy prohibits `example.com` addresses. This was fixed in v1.0 (user-agent changed to `competitor-spy/1.0 contact:competitor-spy@pm.me`). If 403 recurs after an update, the user-agent may have been inadvertently changed.
+
+**Resolution:** Verify user-agent in `competitor_spy_adapters/src/nominatim.rs` — both `NominatimGeocoder::new()` and `NominatimAdapter::new()` — is not using an `example.com` address.
+
+---
+
+## RUN-004: OSM Overpass HTTP 404
+
+**Symptom:** `adapter_result adapter_id="osm_overpass" outcome="http_4xx" code=404`
+
+**Cause:** The Overpass endpoint URL is wrong. The correct URL is `https://overpass-api.de/api/interpreter` (not `/api`). This was fixed in v1.0 (DEF-001).
+
+**Resolution:** Verify `AdapterUrls::production()` in `competitor_spy_cli/src/runner.rs` has `osm_overpass: "https://overpass-api.de/api/interpreter"`.
+
+---
+
+## RUN-005: All adapters show ADAPTER_CONFIG_MISSING
+
+**Symptom:** Footer shows `yelp: ADAPTER_CONFIG_MISSING` and `google_places: ADAPTER_CONFIG_MISSING`. Exit code is still 0.
+
+**Cause:** No API credentials are stored for Yelp/Google. OSM/Nominatim do not require credentials, so these always attempt.
+
+**Resolution:** This is expected behaviour for initial runs without credentials. Results from OSM/Nominatim will still appear. To add Yelp/Google credentials, set `CSPY_CREDENTIAL_PASSPHRASE` and run — you will be prompted on stderr.
+
+---
+
+## RUN-006: No competitors found ("(no competitors found)")
+
+**Symptom:** Report renders with `(no competitors found)`. Exit code 0.
+
+**Cause:** All adapters returned zero matching records, or all adapters failed.
+
+**Resolution:**
+1. Check the failed sources footer for adapter error codes.
+2. Try a broader industry term (e.g. "gym" instead of "martial arts gym").
+3. Try a larger radius (`--radius 20` or `--radius 50`).
+4. Verify internet access and adapter URLs (see RUN-003, RUN-004).
+
+---
+
+## RUN-007: PDF write failure
+
+**Symptom:** `[WARN] PDF render failed: ...`. Terminal output still produced. Exit code 0.
+
+**Cause:** `--output-dir` path does not exist or is not writable.
+
+**Resolution:**
+1. Verify the path exists: `Test-Path <output-dir>` (PowerShell) or `ls <output-dir>` (Bash).
+2. Create the directory if missing: `New-Item -ItemType Directory <output-dir>`.
+3. Check disk space and write permissions.
+
+---
+
+## RUN-008: Credential store unreadable
+
+**Symptom:** `[WARN] credential store unreadable; skipping credential-requiring adapters`
+
+**Cause:** The credential store file exists but is corrupted, or the wrong passphrase is supplied.
+
+**Resolution:**
+1. Verify `CSPY_CREDENTIAL_PASSPHRASE` is set correctly.
+2. If the store is corrupted, delete it and re-enter credentials:
+   - Windows: `Remove-Item "$env:APPDATA\competitor-spy\credentials"`
+   - Linux: `rm ~/.config/competitor-spy/credentials`
+
+---
+
+## Known Environment Gaps (see `docs/evidence/environment-matrix.md`)
+
+| Environment | Status | Risk |
+|---|---|---|
+| Linux x86_64 | NOT TESTED in v1.0 | Medium — pure-Rust deps, no system binary calls; expected to work; validate before production use |
+| macOS | OUT OF SCOPE | Not supported in v1.0 |
+
+**Post-release Linux validation steps:**
+1. `cargo build --release -p competitor_spy_cli`
+2. `./target/release/competitor-spy --industry "yoga studio" --location "Amsterdam, Netherlands" --radius 10`
+3. Confirm exit 0, PDF created, terminal output rendered.
+4. Update `docs/evidence/environment-matrix.md` with result.

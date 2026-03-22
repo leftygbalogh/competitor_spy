@@ -24,10 +24,11 @@ Spec: CSPY-SPEC-001 v1.0. Project mode: Greenfield. Implementation: Rust workspa
 - [x] All deliverables listed in the project brief are present.
 - [x] All logging, output, and artifact requirements are implemented as specified.
 - [x] Governance artifacts updated for stages 1-6
-- [x] Agent feedback file updated
-- [ ] Push target verified immediately before publish: `git remote -v` captured in evidence
-- [ ] Intended remote and branch explicitly stated and approved before push
-- [ ] Release remote proof snapshot saved: `docs/evidence/release-remote-proof.md`
+- [x] GETTING_STARTED.md, RUNBOOK_KNOWN_FAILURES.md, OPERATIONS_AND_ROLLBACK.md, POST_RELEASE_MONITORING.md, CHANGELOG.md rewritten for Competitor Spy (not template defaults)
+- [x] Architecture Decision Records created: `docs/adr/` ADR-001 through ADR-006
+- [x] Push target verified: `git remote -v` → `origin https://github.com/leftygbalogh/competitor_spy.git`
+- [x] Intended remote and branch explicitly stated and approved by product owner (Lefty) before push
+- [x] Release remote proof snapshot saved: `docs/evidence/release-remote-proof.md`
 
 ## Stage 5 Approval
 
@@ -38,5 +39,5 @@ Spec: CSPY-SPEC-001 v1.0. Project mode: Greenfield. Implementation: Rust workspa
 ## Stage 6 Approval
 
 - Approved by: Team Lead Agent (delegated)
-- Approval date: [fill in]
-- Notes: Release complete for this project iteration.
+- Approval date: 2026-03-22
+- Notes: All Stage 6 deliverables complete. Push target confirmed. Force push to `leftygbalogh/competitor_spy.git master` authorised by Lefty.

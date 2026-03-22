@@ -1,43 +1,118 @@
-# Getting Started
+# Getting Started — Competitor Spy v1.0
 
-## Goal
+Competitor Spy is a local OSINT competitor-intelligence CLI tool written in Rust. It geocodes a location, queries public business data sources, normalises and ranks results, and outputs a terminal table and a PDF report.
 
-Use this governance template as the active policy and workflow layer for a new software project.
+---
 
-## Quick Start
+## Prerequisites
 
-1. Copy this folder into your target project.
-2. Rename it to a project-specific governance folder.
-3. Initialize git repository if missing.
-4. Read files in the discovery order listed in `README.md`.
-5. First discovery question must select project mode: Greenfield or Brownfield.
-6. Complete and approve artifacts in order:
-   - `PROJECT_BRIEF.md`
-   - `FORMAL_SPEC.md`
-   - `TASK_LIST.md`
-   - `IMPLEMENTATION_CHRONICLE.md`
-7. Enforce stage gates:
-   - explicit approval required
-   - stage-completion commit required
+- **Rust toolchain** — stable, 1.79 or later. Install via [rustup.rs](https://rustup.rs).
+- **Windows 11 x86_64** or **Linux x86_64** (see `docs/evidence/environment-matrix.md` for support status).
+- Internet access for geocoding (Nominatim) and data sources.
+- Optional: Yelp Fusion API key and/or Google Places API key for richer results.
 
-## Repository Identity Setup (Mandatory)
+---
 
-1. Immediately after cloning a project from this template, run `git remote -v`.
-2. Confirm the intended application repository URL for fetch and push.
-3. If `origin` still points to the template repository, repoint it before any branch work:
-   - `git remote set-url origin <application-repository-url>`
-4. Record this verification in release evidence before first publish.
+## Build
 
-No push is allowed until repository identity is explicitly verified.
+```powershell
+# Windows (PowerShell)
+cargo build --release -p competitor_spy_cli
+# Binary: target\release\competitor-spy.exe
 
-## Linux Compliance Setup
+# Linux (Bash)
+cargo build --release -p competitor_spy_cli
+# Binary: target/release/competitor-spy
+```
 
-1. Ensure `.gitattributes` enforces LF (`* text=auto eol=lf`).
-2. Ensure `.editorconfig` sets `end_of_line = lf`.
-3. Use POSIX-style paths (`/`) in governance examples unless platform-specific behavior is being documented.
-4. Prefer Linux-compatible shell command examples for shared runbooks and onboarding docs.
+All workspace tests must pass before use:
 
-## Required Logs
+```powershell
+cargo test --workspace
+# Expected: 198 tests, 0 failures (193 unit + 5 acceptance)
+```
 
-- Append every user prompt to `prompts.md`.
-- Keep `memory.md` updated with status, decisions, blockers, and next step.
+---
+
+## Basic Usage
+
+```
+competitor-spy \
+  --industry "yoga studio" \
+  --location "Amsterdam, Netherlands" \
+  --radius 10
+```
+
+This will:
+1. Geocode "Amsterdam, Netherlands" via Nominatim.
+2. Query all configured data adapters (OSM/Overpass, Nominatim, Yelp, Google Places) within 10 km.
+3. Normalise, deduplicate, and rank results.
+4. Print a terminal table and save a PDF to the current directory.
+
+**Available flags:**
+
+| Flag | Required | Default | Description |
+|---|---|---|---|
+| `--industry` | Yes | — | Business type to search for |
+| `--location` | Yes | — | Location string (geocoded) |
+| `--radius` | Yes | — | Search radius: 5, 10, 20, 25, or 50 km |
+| `--output-dir` | No | `.` (cwd) | Directory to save PDF |
+| `--no-pdf` | No | off | Skip PDF generation |
+| `--log-level` | No | `info` | Trace, debug, info, warn, or error |
+| `--pacing-seed` | No | random | Deterministic pacing seed (testing/debug) |
+
+**Exit codes:** 0 = success (even if some sources fail). 1 = fatal error (bad args, geocoding failure, terminal render failure).
+
+---
+
+## API Credentials (Optional)
+
+Yelp and Google Places require API keys for results. On first run, if a key is not stored, you will be prompted on stderr with echo disabled.
+
+Keys are stored encrypted (age, passphrase-based) at:
+- Windows: `%APPDATA%\competitor-spy\credentials`
+- Linux: `~/.config/competitor-spy/credentials`
+
+Set passphrase via environment variable (never on the command line):
+```powershell
+$env:CSPY_CREDENTIAL_PASSPHRASE = "your-passphrase"
+```
+
+---
+
+## Capturing a Session (for Diagnostics)
+
+```powershell
+# Windows
+.\scripts\capture_session.ps1
+
+# Linux
+bash scripts/capture_session.sh
+```
+
+Session logs are saved to `docs/evidence/sessions/` with naming `session_YYYYMMDD_HHMMSS_<label>.log`.
+
+---
+
+## PDF Output
+
+PDF files are saved to `--output-dir` (default: working directory). Filename format:
+```
+competitor_spy_report_YYYYMMDD_HHMMSS_UTC.pdf
+```
+
+---
+
+## Understanding the Report
+
+- **Rank** — order by distance ascending, then keyword-relevance descending, then name alphabetically.
+- **Keyword%** — token overlap between competitor categories and your industry query, 0–100%.
+- **Visibility%** — composite of profile completeness and review count, 0–100%.
+- **`--`** — field absent from all sources for this competitor.
+- **Failed sources footer** — sources that returned 4xx/5xx/timeout/parse errors. Failures are non-fatal; results from other sources are still shown.
+
+---
+
+## Troubleshooting
+
+See `RUNBOOK_KNOWN_FAILURES.md` for specific failure scenarios and recovery steps.

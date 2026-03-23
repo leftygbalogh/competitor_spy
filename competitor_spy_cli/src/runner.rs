@@ -58,6 +58,7 @@ pub async fn run_with_urls(
     radius_km: u32,
     output_dir: &PathBuf,
     no_pdf: bool,
+    detail: bool,
     urls: AdapterUrls,
     extra_credentials: HashMap<String, String>,
 ) -> i32 {
@@ -160,14 +161,14 @@ pub async fn run_with_urls(
     }
 
     // 9. Terminal output
-    if let Err(e) = terminal::render_stdout(&run) {
+    if let Err(e) = terminal::render_stdout(&run, detail) {
         eprintln!("error: failed to write terminal output: {e}");
         return 1;
     }
 
     // 10. PDF output (unless --no-pdf)
     if !no_pdf {
-        match pdf::render_to_dir(&run, output_dir) {
+        match pdf::render_to_dir(&run, detail, output_dir) {
             Ok(path) => {
                 log::info!("PDF written to {}", path.display());
             }

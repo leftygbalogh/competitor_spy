@@ -33,18 +33,19 @@ pub fn pdf_filename(run: &SearchRun) -> String {
 ///
 /// Returns the full path of the file written on success.
 /// Returns `Err` on I/O failure; caller should downgrade to warning per spec §6.2.
-pub fn render_to_dir(run: &SearchRun, output_dir: &Path) -> io::Result<std::path::PathBuf> {
+pub fn render_to_dir(run: &SearchRun, detail: bool, output_dir: &Path) -> io::Result<std::path::PathBuf> {
     let filename = pdf_filename(run);
     let path = output_dir.join(&filename);
     let file = std::fs::File::create(&path)?;
     let writer = BufWriter::new(file);
-    render_to_writer(run, writer)?;
+    render_to_writer(run, detail, writer)?;
     Ok(path)
 }
 
 /// Render `run` to an arbitrary writer (useful for testing).
 pub fn render_to_writer<W: io::Write + io::Seek>(
     run: &SearchRun,
+    _detail: bool,
     writer: W,
 ) -> io::Result<()> {
     let doc = build_document(run);
@@ -53,10 +54,10 @@ pub fn render_to_writer<W: io::Write + io::Seek>(
 }
 
 /// Render to a `Vec<u8>` in-memory. Useful for tests.
-pub fn render_to_bytes(run: &SearchRun) -> io::Result<Vec<u8>> {
+pub fn render_to_bytes(run: &SearchRun, detail: bool) -> io::Result<Vec<u8>> {
     use std::io::Cursor;
     let mut buf = Cursor::new(Vec::new());
-    render_to_writer(run, &mut buf)?;
+    render_to_writer(run, detail, &mut buf)?;
     Ok(buf.into_inner())
 }
 
@@ -270,14 +271,14 @@ mod tests {
     #[test]
     fn render_produces_non_empty_bytes() {
         let run = make_run();
-        let bytes = render_to_bytes(&run).expect("render failed");
+        let bytes = render_to_bytes(&run, false).expect("render failed");
         assert!(!bytes.is_empty(), "PDF bytes must not be empty");
     }
 
     #[test]
     fn render_produces_valid_pdf_header() {
         let run = make_run();
-        let bytes = render_to_bytes(&run).expect("render failed");
+        let bytes = render_to_bytes(&run, false).expect("render failed");
         // Every PDF begins with the magic bytes %PDF-
         assert!(
             bytes.starts_with(b"%PDF-"),
@@ -290,7 +291,7 @@ mod tests {
     fn render_bytes_exceed_500_bytes() {
         // A PDF with text content is always far larger than a trivial stub.
         let run = make_run();
-        let bytes = render_to_bytes(&run).expect("render failed");
+        let bytes = render_to_bytes(&run, false).expect("render failed");
         assert!(
             bytes.len() > 500,
             "PDF should contain substantial content, got {} bytes",
@@ -303,7 +304,7 @@ mod tests {
         let run = make_run();
         let dir = std::env::temp_dir().join("cspy_test_pdf");
         std::fs::create_dir_all(&dir).unwrap();
-        let path = render_to_dir(&run, &dir).expect("render failed");
+        let path = render_to_dir(&run, false, &dir).expect("render failed");
         assert!(path.exists(), "file was not created at {path:?}");
         assert_eq!(
             path.file_name().and_then(|n| n.to_str()).unwrap(),
@@ -327,7 +328,7 @@ mod tests {
         run.start_ranking();
         run.set_competitors(vec![]);
         run.complete(ts);
-        let bytes = render_to_bytes(&run).expect("render failed");
+        let bytes = render_to_bytes(&run, false).expect("render failed");
         assert!(bytes.starts_with(b"%PDF-"));
     }
 }

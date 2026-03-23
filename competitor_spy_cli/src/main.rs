@@ -50,6 +50,10 @@ struct Cli {
     #[arg(long, default_value_t = false)]
     no_pdf: bool,
 
+    /// Show detailed card view: editorial summary, price level, and reviews (default: on)
+    #[arg(long, default_value_t = true)]
+    detail: bool,
+
     /// Log verbosity: trace, debug, info, warn, error
     #[arg(long, default_value = "info")]
     log_level: String,
@@ -127,6 +131,7 @@ async fn run() -> i32 {
         radius,
         &cli.output_dir,
         cli.no_pdf,
+        cli.detail,
         AdapterUrls::production(),
         HashMap::new(),
     )

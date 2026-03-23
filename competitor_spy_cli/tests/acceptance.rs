@@ -120,6 +120,7 @@ async fn as_001_valid_input_both_outputs_exit_0() {
         10,
         &temp_dir(),
         false, // produce PDF
+        true,  // detail view (production default)
         all_at(&server),
         no_creds(),
     )
@@ -179,6 +180,7 @@ async fn as_002_one_adapter_timeout_still_exit_0() {
         10,
         &temp_dir(),
         true, // skip PDF for speed
+        true,  // detail view (production default)
         all_at(&server),
         no_creds(),
     )
@@ -199,6 +201,7 @@ async fn as_003_invalid_radius_exit_1() {
         7, // invalid radius (not 5/10/20/25/50)
         &temp_dir(),
         true,
+        true,  // detail view (production default)
         AdapterUrls::production(), // doesn't matter — never reached
         no_creds(),
     )
@@ -226,6 +229,7 @@ async fn as_004_geocoding_no_results_exit_1() {
         10,
         &temp_dir(),
         true,
+        true,  // detail view (production default)
         all_at(&server),
         no_creds(),
     )
@@ -272,6 +276,7 @@ async fn as_005_all_adapters_fail_zero_competitors_exit_0() {
         10,
         &temp_dir(),
         true, // skip PDF for speed
+        true,  // detail view (production default)
         all_at(&server),
         no_creds(),
     )

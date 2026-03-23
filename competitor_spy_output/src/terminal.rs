@@ -23,20 +23,20 @@ const W_VISIBILITY: usize = 11;
 /// Render `run` to `out` as a plain-text table.
 ///
 /// Returns `Err` only on I/O failure.
-pub fn render<W: Write>(run: &SearchRun, out: &mut W) -> io::Result<()> {
-    let text = format_run(run);
+pub fn render<W: Write>(run: &SearchRun, detail: bool, out: &mut W) -> io::Result<()> {
+    let text = format_run(run, detail);
     out.write_all(text.as_bytes())
 }
 
 /// Render to stdout.
-pub fn render_stdout(run: &SearchRun) -> io::Result<()> {
-    render(run, &mut io::stdout())
+pub fn render_stdout(run: &SearchRun, detail: bool) -> io::Result<()> {
+    render(run, detail, &mut io::stdout())
 }
 
 // ── Formatting ────────────────────────────────────────────────────────────────
 
 /// Build the full report as a String.
-pub fn format_run(run: &SearchRun) -> String {
+pub fn format_run(run: &SearchRun, _detail: bool) -> String {
     let mut buf = String::new();
 
     // ── Header ──────────────────────────────────────────────────────────────
@@ -240,28 +240,28 @@ mod tests {
     #[test]
     fn render_contains_header_industry_line() {
         let run = make_run_done();
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         assert!(output.contains("Industry : yoga studio"), "got:\n{output}");
     }
 
     #[test]
     fn render_contains_location_line() {
         let run = make_run_done();
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         assert!(output.contains("Location : Amsterdam, Netherlands"), "got:\n{output}");
     }
 
     #[test]
     fn render_contains_radius_line() {
         let run = make_run_done();
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         assert!(output.contains("Radius   : 10 km"), "got:\n{output}");
     }
 
     #[test]
     fn render_contains_competitor_names() {
         let run = make_run_done();
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         assert!(output.contains("Zen Yoga Amsterdam"), "got:\n{output}");
         assert!(output.contains("Power Flow Studio"), "got:\n{output}");
     }
@@ -269,7 +269,7 @@ mod tests {
     #[test]
     fn render_contains_rank_numbers() {
         let run = make_run_done();
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         // rank 1 and 2 appear in first column
         assert!(output.contains("1   "), "no rank 1 found in:\n{output}");
         assert!(output.contains("2   "), "no rank 2 found in:\n{output}");
@@ -278,7 +278,7 @@ mod tests {
     #[test]
     fn render_contains_distance_formatted() {
         let run = make_run_done();
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         assert!(output.contains("1.20 km"), "got:\n{output}");
         assert!(output.contains("2.50 km"), "got:\n{output}");
     }
@@ -286,7 +286,7 @@ mod tests {
     #[test]
     fn render_contains_keyword_and_visibility_percentages() {
         let run = make_run_done();
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         assert!(output.contains("85%"), "got:\n{output}");
         assert!(output.contains("70%"), "got:\n{output}");
     }
@@ -314,7 +314,7 @@ mod tests {
         };
         run.set_competitors(vec![c]);
         run.complete(ts);
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         // Phone and website are absent -> "--"
         assert!(output.contains("--"), "absent field should be '--': {output}");
     }
@@ -322,7 +322,7 @@ mod tests {
     #[test]
     fn render_footer_lists_failed_source() {
         let run = make_run_done();
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         assert!(output.contains("Failed sources:"), "got:\n{output}");
         assert!(output.contains("yelp"), "got:\n{output}");
         assert!(output.contains("HTTP_4XX"), "got:\n{output}");
@@ -346,7 +346,7 @@ mod tests {
         run.start_ranking();
         run.set_competitors(vec![]);
         run.complete(ts);
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         assert!(!output.contains("Failed sources:"), "unexpected footer:\n{output}");
     }
 
@@ -361,14 +361,14 @@ mod tests {
         run.start_ranking();
         run.set_competitors(vec![]);
         run.complete(ts);
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         assert!(output.contains("(no competitors found)"), "got:\n{output}");
     }
 
     #[test]
     fn render_produces_column_headers() {
         let run = make_run_done();
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         assert!(output.contains("Rank"), "got:\n{output}");
         assert!(output.contains("Name"), "got:\n{output}");
         assert!(output.contains("Distance"), "got:\n{output}");
@@ -402,7 +402,7 @@ mod tests {
         };
         run.set_competitors(vec![c]);
         run.complete(ts);
-        let output = format_run(&run);
+        let output = format_run(&run, false);
         // Name column is 28 chars wide; long name must be truncated (no full 50-char string)
         assert!(!output.contains(&long_name), "name should be truncated:\n{output}");
         // Truncated name contains ellipsis
@@ -413,7 +413,7 @@ mod tests {
     fn render_writes_to_provided_writer() {
         let run = make_run_done();
         let mut buf: Vec<u8> = Vec::new();
-        render(&run, &mut buf).unwrap();
+        render(&run, false, &mut buf).unwrap();
         let text = String::from_utf8(buf).unwrap();
         assert!(text.contains("yoga studio"), "got:\n{text}");
     }
@@ -421,7 +421,7 @@ mod tests {
     #[test]
     fn snapshot_matches_expected_output() {
         let run = make_run_done();
-        let output = format_run(&run);
+        let output = format_run(&run, false);
 
         // The snapshot checks structural properties of every line without
         // hard-coding inter-column spaces, making it robust to minor width tweaks.

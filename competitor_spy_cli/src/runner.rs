@@ -56,7 +56,7 @@ pub async fn run_with_urls(
     industry: &str,
     location_input: &str,
     radius_km: u32,
-    output_dir: &PathBuf,
+    output_dir: Option<PathBuf>,
     no_pdf: bool,
     detail: bool,
     urls: AdapterUrls,
@@ -168,7 +168,11 @@ pub async fn run_with_urls(
 
     // 10. PDF output (unless --no-pdf)
     if !no_pdf {
-        match pdf::render_to_dir(&run, detail, output_dir) {
+        let resolved_dir = match output_dir {
+            Some(d) => d,
+            None => default_output_dir(),
+        };
+        match pdf::render_to_dir(&run, detail, &resolved_dir) {
             Ok(path) => {
                 log::info!("PDF written to {}", path.display());
             }
@@ -182,6 +186,19 @@ pub async fn run_with_urls(
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/// Resolve the default PDF output directory per DT-003:
+/// `~/competitor-spy/reports`, falling back to the current directory.
+pub fn default_output_dir() -> PathBuf {
+    let base = dirs::home_dir()
+        .unwrap_or_else(|| PathBuf::from("."));
+    let dir = base.join("competitor-spy").join("reports");
+    if std::fs::create_dir_all(&dir).is_ok() {
+        dir
+    } else {
+        PathBuf::from(".")
+    }
+}
 
 pub fn credential_store_path() -> PathBuf {
     #[cfg(windows)]

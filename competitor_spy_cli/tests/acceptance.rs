@@ -118,7 +118,7 @@ async fn as_001_valid_input_both_outputs_exit_0() {
         "yoga studio",
         "Amsterdam, Netherlands",
         10,
-        &temp_dir(),
+        Some(temp_dir()),    // output dir
         false, // produce PDF
         true,  // detail view (production default)
         all_at(&server),
@@ -178,7 +178,7 @@ async fn as_002_one_adapter_timeout_still_exit_0() {
         "yoga studio",
         "Amsterdam, Netherlands",
         10,
-        &temp_dir(),
+        Some(temp_dir()),    // output dir
         true, // skip PDF for speed
         true,  // detail view (production default)
         all_at(&server),
@@ -199,7 +199,7 @@ async fn as_003_invalid_radius_exit_1() {
         "yoga studio",
         "Amsterdam, Netherlands",
         7, // invalid radius (not 5/10/20/25/50)
-        &temp_dir(),
+        Some(temp_dir()),    // output dir
         true,
         true,  // detail view (production default)
         AdapterUrls::production(), // doesn't matter — never reached
@@ -227,7 +227,7 @@ async fn as_004_geocoding_no_results_exit_1() {
         "yoga studio",
         "NowhereXYZ9999",
         10,
-        &temp_dir(),
+        Some(temp_dir()),    // output dir
         true,
         true,  // detail view (production default)
         all_at(&server),
@@ -274,7 +274,7 @@ async fn as_005_all_adapters_fail_zero_competitors_exit_0() {
         "yoga studio",
         "Amsterdam, Netherlands",
         10,
-        &temp_dir(),
+        Some(temp_dir()),    // output dir
         true, // skip PDF for speed
         true,  // detail view (production default)
         all_at(&server),

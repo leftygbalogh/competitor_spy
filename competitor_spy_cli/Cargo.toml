@@ -25,6 +25,7 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 log = { workspace = true }
 chrono = { workspace = true }
+dirs = { workspace = true }
 
 [dev-dependencies]
 wiremock = { workspace = true }

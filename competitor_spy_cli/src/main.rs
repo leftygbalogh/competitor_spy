@@ -42,9 +42,9 @@ struct Cli {
     #[arg(long)]
     radius: Option<u32>,
 
-    /// Directory to write the PDF report (default: current directory)
-    #[arg(long, default_value = ".")]
-    output_dir: PathBuf,
+    /// Directory to write the PDF report (default: ~/competitor-spy/reports)
+    #[arg(long)]
+    output_dir: Option<PathBuf>,
 
     /// Skip PDF output; only render to terminal
     #[arg(long, default_value_t = false)]
@@ -129,7 +129,7 @@ async fn run() -> i32 {
         &industry,
         &location,
         radius,
-        &cli.output_dir,
+        cli.output_dir,
         cli.no_pdf,
         cli.detail,
         AdapterUrls::production(),

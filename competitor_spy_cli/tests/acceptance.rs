@@ -285,3 +285,82 @@ async fn as_005_all_adapters_fail_zero_competitors_exit_0() {
     // All adapters failed but run still completes with exit 0 and zero competitors
     assert_eq!(exit, 0, "expected exit 0 with zero competitors when all adapters fail");
 }
+
+// ── AS2-006: detail=true, full V2 mock (editorial+price+reviews) → exit 0 ────
+
+#[tokio::test]
+async fn as2_006_detail_true_v2_fields_exit_0() {
+    let server = MockServer::start().await;
+
+    // Geocoder: Amsterdam
+    Mock::given(method("GET"))
+        .and(path("/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(geocode_ok_body()))
+        .mount(&server)
+        .await;
+
+    // OSM Overpass: empty
+    Mock::given(method("POST"))
+        .and(path("/interpreter"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(overpass_empty_body()))
+        .mount(&server)
+        .await;
+
+    // Yelp: empty
+    Mock::given(method("GET"))
+        .and(path("/v3/businesses/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(yelp_empty_body()))
+        .mount(&server)
+        .await;
+
+    // Google Places: full V2 response with editorial summary, price level, reviews
+    let google_v2_body = serde_json::json!({
+        "places": [{
+            "id": "ChIJv2as2006",
+            "displayName": { "text": "Pilates Wien Pro" },
+            "formattedAddress": "Mariahilfer Strasse 12, 1060 Wien",
+            "location": { "latitude": 52.370, "longitude": 4.895 },
+            "nationalPhoneNumber": "+43 1 234 5678",
+            "websiteUri": "https://pilateswien.at",
+            "editorialSummary": { "text": "A welcoming studio in the heart of Vienna." },
+            "priceLevel": "PRICE_LEVEL_MODERATE",
+            "regularOpeningHours": {
+                "weekdayDescriptions": [
+                    "Monday: 9:00 AM - 6:00 PM",
+                    "Tuesday: 9:00 AM - 6:00 PM"
+                ]
+            },
+            "reviews": [
+                {
+                    "text": { "text": "Great instructor, very professional." },
+                    "rating": 4.0,
+                    "relativePublishTimeDescription": "2 months ago"
+                },
+                {
+                    "text": { "text": "Best pilates in Vienna!" },
+                    "rating": 5.0,
+                    "relativePublishTimeDescription": "1 month ago"
+                }
+            ]
+        }]
+    });
+    Mock::given(method("POST"))
+        .and(path("/v1/places:searchText"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(google_v2_body))
+        .mount(&server)
+        .await;
+
+    let exit = run_with_urls(
+        "pilates studio",
+        "Wien, Austria",
+        10,
+        Some(temp_dir()),    // output dir
+        false, // produce PDF
+        true,  // detail view — exercises the reviews rendering path
+        all_at(&server),
+        no_creds(),
+    )
+    .await;
+
+    assert_eq!(exit, 0, "expected exit 0 for full V2 mock with detail=true");
+}

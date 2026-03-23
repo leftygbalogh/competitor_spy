@@ -56,6 +56,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # CLI argument parsing
 clap = { version = "4", features = ["derive"] }
 
+# Hidden password/passphrase prompts
+rpassword = "7"
+
 # Mock HTTP server for tests
 wiremock = "0.6"
 

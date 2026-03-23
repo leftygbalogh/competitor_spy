@@ -21,6 +21,7 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use chrono::Utc;
+use std::time::Duration;
 use tracing::{info, warn};
 
 use competitor_spy_domain::query::{Location, Radius, SearchQuery};
@@ -35,12 +36,14 @@ use crate::pacing::PacingPolicy;
 struct TextSearchRequest {
     #[serde(rename = "textQuery")]
     text_query: String,
-    #[serde(rename = "maxResultCount")]
-    max_result_count: u32,
+    #[serde(rename = "pageSize")]
+    page_size: u32,
     #[serde(rename = "locationBias")]
     location_bias: LocationBias,
     #[serde(rename = "rankPreference")]
     rank_preference: String,
+    #[serde(rename = "pageToken", skip_serializing_if = "Option::is_none")]
+    page_token: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -64,6 +67,8 @@ struct LatLng {
 struct NearbySearchResponse {
     #[serde(default)]
     places: Vec<GooglePlace>,
+    #[serde(rename = "nextPageToken", default)]
+    next_page_token: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -167,8 +172,10 @@ impl GooglePlacesAdapter {
 // EXTENDED includes atmosphere/pro fields (editorial, price, reviews); some API
 // keys require separate billing for these. If Google returns 400, we fall back
 // to BASIC so the run still yields results.
-const FIELD_MASK_EXTENDED: &str = "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.userRatingCount,places.location,places.editorialSummary,places.priceLevel,places.regularOpeningHours,places.reviews";
-const FIELD_MASK_BASIC: &str    = "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.userRatingCount,places.location";
+const FIELD_MASK_EXTENDED: &str = "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.userRatingCount,places.location,places.editorialSummary,places.priceLevel,places.regularOpeningHours,places.reviews,nextPageToken";
+const FIELD_MASK_BASIC: &str    = "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.userRatingCount,places.location,nextPageToken";
+const MAX_GOOGLE_PAGES: usize = 3;
+const GOOGLE_PAGE_SIZE: u32 = 20;
 
 #[async_trait]
 impl SourceAdapter for GooglePlacesAdapter {
@@ -201,71 +208,24 @@ impl SourceAdapter for GooglePlacesAdapter {
         // Audit: log URL as hostname+path only (§6.3) — api key is in header, not URL
         info!(event = "adapter_request", adapter_id = "google_places", url = %url);
 
-        let request_body = build_request_body(
-            &query.industry,
-            location.latitude,
-            location.longitude,
-            radius.km_value() as f64 * 1000.0,
-        );
-
-        // Try extended field mask first (editorial summary, price, reviews).
-        // Fall back to basic fields if Google returns 400 — this happens when
-        // the API key's billing tier does not include atmosphere/pro fields.
-        let mut response = match self.client
-            .post(&url)
-            .header("X-Goog-Api-Key", api_key)
-            .header("X-Goog-FieldMask", FIELD_MASK_EXTENDED)
-            .json(&request_body)
-            .send()
+        let radius_m = radius.km_value() as f64 * 1000.0;
+        let records = match self
+            .collect_all_pages(&url, api_key, &query.industry, location.latitude, location.longitude, radius_m, FIELD_MASK_EXTENDED)
             .await
         {
-            Ok(r) => r,
-            Err(_) => {
-                warn!(event = "adapter_result", adapter_id = "google_places", outcome = "timeout");
-                return failed_result(ReasonCode::Timeout);
-            }
-        };
-
-        if response.status().as_u16() == 400 {
-            warn!(event = "adapter_result", adapter_id = "google_places", outcome = "extended_fields_400_fallback");
-            response = match self.client
-                .post(&url)
-                .header("X-Goog-Api-Key", api_key)
-                .header("X-Goog-FieldMask", FIELD_MASK_BASIC)
-                .json(&request_body)
-                .send()
-                .await
-            {
-                Ok(r) => r,
-                Err(_) => {
-                    warn!(event = "adapter_result", adapter_id = "google_places", outcome = "timeout");
-                    return failed_result(ReasonCode::Timeout);
+            Ok(records) => records,
+            Err(GoogleCollectError::Http400) => {
+                warn!(event = "adapter_result", adapter_id = "google_places", outcome = "extended_fields_400_fallback");
+                match self
+                    .collect_all_pages(&url, api_key, &query.industry, location.latitude, location.longitude, radius_m, FIELD_MASK_BASIC)
+                    .await
+                {
+                    Ok(records) => records,
+                    Err(error) => return failed_result(error.into_reason_code()),
                 }
-            };
-        }
-
-        let status = response.status();
-        if status.is_client_error() {
-            warn!(event = "adapter_result", adapter_id = "google_places", outcome = "http_4xx", code = status.as_u16());
-            return failed_result(ReasonCode::Http4xx);
-        }
-        if status.is_server_error() {
-            warn!(event = "adapter_result", adapter_id = "google_places", outcome = "http_5xx", code = status.as_u16());
-            return failed_result(ReasonCode::Http5xx);
-        }
-
-        let google_response: NearbySearchResponse = match response.json().await {
-            Ok(r) => r,
-            Err(e) => {
-                warn!(event = "adapter_result", adapter_id = "google_places", outcome = "parse_error", error = %e);
-                return failed_result(ReasonCode::ParseError);
             }
+            Err(error) => return failed_result(error.into_reason_code()),
         };
-
-        let records: Vec<RawRecord> = google_response.places
-            .into_iter()
-            .map(place_to_record)
-            .collect();
 
         info!(
             event = "adapter_result",
@@ -279,6 +239,26 @@ impl SourceAdapter for GooglePlacesAdapter {
             status: AdapterResultStatus::Success,
             records,
             retrieved_at: Utc::now(),
+        }
+    }
+}
+
+#[derive(Debug)]
+enum GoogleCollectError {
+    Timeout,
+    Http400,
+    Http4xx,
+    Http5xx,
+    ParseError,
+}
+
+impl GoogleCollectError {
+    fn into_reason_code(self) -> ReasonCode {
+        match self {
+            Self::Timeout => ReasonCode::Timeout,
+            Self::Http400 | Self::Http4xx => ReasonCode::Http4xx,
+            Self::Http5xx => ReasonCode::Http5xx,
+            Self::ParseError => ReasonCode::ParseError,
         }
     }
 }
@@ -313,13 +293,19 @@ fn price_level_to_symbol(price_level: &str) -> String {
     }
 }
 
-fn build_request_body(industry: &str, lat: f64, lon: f64, radius_m: f64) -> TextSearchRequest {
+fn build_request_body(
+    industry: &str,
+    lat: f64,
+    lon: f64,
+    radius_m: f64,
+    page_token: Option<String>,
+) -> TextSearchRequest {
     // Max radius: 50000m; clamp to 50km.
     let radius_clamped = radius_m.min(50_000.0);
 
     TextSearchRequest {
         text_query: industry.to_string(),
-        max_result_count: 20,
+        page_size: GOOGLE_PAGE_SIZE,
         location_bias: LocationBias {
             circle: Circle {
                 center: LatLng { latitude: lat, longitude: lon },
@@ -327,6 +313,69 @@ fn build_request_body(industry: &str, lat: f64, lon: f64, radius_m: f64) -> Text
             },
         },
         rank_preference: "DISTANCE".to_string(),
+        page_token,
+    }
+}
+
+impl GooglePlacesAdapter {
+    async fn collect_all_pages(
+        &self,
+        url: &str,
+        api_key: &str,
+        industry: &str,
+        lat: f64,
+        lon: f64,
+        radius_m: f64,
+        field_mask: &str,
+    ) -> Result<Vec<RawRecord>, GoogleCollectError> {
+        let mut page_token = None;
+        let mut records = Vec::new();
+
+        for page_index in 0..MAX_GOOGLE_PAGES {
+            let request_body = build_request_body(industry, lat, lon, radius_m, page_token.clone());
+            let response = self
+                .client
+                .post(url)
+                .header("X-Goog-Api-Key", api_key)
+                .header("X-Goog-FieldMask", field_mask)
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|_| GoogleCollectError::Timeout)?;
+
+            let status = response.status();
+            if status.as_u16() == 400 {
+                return Err(GoogleCollectError::Http400);
+            }
+            if status.is_client_error() {
+                warn!(event = "adapter_result", adapter_id = "google_places", outcome = "http_4xx", code = status.as_u16());
+                return Err(GoogleCollectError::Http4xx);
+            }
+            if status.is_server_error() {
+                warn!(event = "adapter_result", adapter_id = "google_places", outcome = "http_5xx", code = status.as_u16());
+                return Err(GoogleCollectError::Http5xx);
+            }
+
+            let google_response: NearbySearchResponse = response
+                .json()
+                .await
+                .map_err(|error| {
+                    warn!(event = "adapter_result", adapter_id = "google_places", outcome = "parse_error", error = %error);
+                    GoogleCollectError::ParseError
+                })?;
+
+            records.extend(google_response.places.into_iter().map(place_to_record));
+
+            match google_response.next_page_token {
+                Some(token) if page_index + 1 < MAX_GOOGLE_PAGES => {
+                    page_token = Some(token);
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                }
+                _ => break,
+            }
+        }
+
+        Ok(records)
     }
 }
 
@@ -511,6 +560,45 @@ mod tests {
         assert_eq!(result.records.len(), 2);
         assert_eq!(result.records[0].fields["name"], "Yoga Studio Alpha");
         assert_eq!(result.records[1].fields["name"], "Yoga Studio Beta");
+    }
+
+    #[tokio::test]
+    async fn adapter_collects_multiple_google_pages() {
+        let mock = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/v1/places:searchText"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "places": [{
+                    "id": "ChIJpage1",
+                    "displayName": { "text": "Page One Studio" },
+                    "location": { "latitude": 52.370, "longitude": 4.895 }
+                }],
+                "nextPageToken": "token-2"
+            })))
+            .up_to_n_times(1)
+            .mount(&mock)
+            .await;
+
+        Mock::given(method("POST"))
+            .and(path("/v1/places:searchText"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "places": [{
+                    "id": "ChIJpage2",
+                    "displayName": { "text": "Page Two Studio" },
+                    "location": { "latitude": 52.375, "longitude": 4.900 }
+                }]
+            })))
+            .mount(&mock)
+            .await;
+
+        let a = GooglePlacesAdapter::with_client(make_client(), mock.uri());
+        let result = a.collect(&make_query(), amsterdam(), Radius::Km10, Some("key")).await;
+
+        assert!(matches!(result.status, AdapterResultStatus::Success));
+        assert_eq!(result.records.len(), 2);
+        assert_eq!(result.records[0].fields["name"], "Page One Studio");
+        assert_eq!(result.records[1].fields["name"], "Page Two Studio");
     }
 
     #[tokio::test]

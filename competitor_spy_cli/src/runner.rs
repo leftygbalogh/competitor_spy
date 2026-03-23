@@ -3,10 +3,12 @@
 // run_with_urls() in-process against WireMock servers.
 
 use std::collections::HashMap;
+use std::io::{self, IsTerminal};
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use chrono::Utc;
+use rpassword::prompt_password;
 
 use competitor_spy_adapters::{
     adapter::{Geocoder, GeocodingError},
@@ -37,6 +39,8 @@ pub struct AdapterUrls {
     pub google_places: String,
 }
 
+const CREDENTIAL_ADAPTER_IDS: [&str; 2] = ["yelp", "google_places"];
+
 impl AdapterUrls {
     pub fn production() -> Self {
         Self {
@@ -45,6 +49,13 @@ impl AdapterUrls {
             yelp: "https://api.yelp.com".to_string(),
             google_places: "https://places.googleapis.com".to_string(),
         }
+    }
+
+    fn is_production(&self) -> bool {
+        self.nominatim == "https://nominatim.openstreetmap.org"
+            && self.osm_overpass == "https://overpass-api.de/api/interpreter"
+            && self.yelp == "https://api.yelp.com"
+            && self.google_places == "https://places.googleapis.com"
     }
 }
 
@@ -102,26 +113,7 @@ pub async fn run_with_urls(
     // 4. Load credentials
     let cred_path = credential_store_path();
     let mut credentials: HashMap<String, String> = extra_credentials;
-
-    if cred_path.exists() {
-        let passphrase = std::env::var("CSPY_CREDENTIAL_PASSPHRASE").unwrap_or_default();
-        match CredentialStore::open(cred_path, passphrase) {
-            Ok(store) => {
-                for adapter_id in &["yelp", "google_places"] {
-                    if let Ok(Some(secret)) = store.retrieve(adapter_id) {
-                        if let Ok(s) = secret.as_str() {
-                            credentials
-                                .entry(adapter_id.to_string())
-                                .or_insert_with(|| s.to_string());
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                log::warn!("Failed to open credential store: {e}; proceeding without credentials");
-            }
-        }
-    }
+    load_stored_credentials(&cred_path, &mut credentials, urls.is_production());
 
     // 5. Build registry and run all adapters concurrently
     let mut registry = SourceRegistry::new();
@@ -216,4 +208,68 @@ pub fn credential_store_path() -> PathBuf {
             .join("competitor-spy")
             .join("credentials")
     }
+}
+
+fn load_stored_credentials(
+    cred_path: &PathBuf,
+    credentials: &mut HashMap<String, String>,
+    allow_prompt: bool,
+) {
+    if !cred_path.exists() {
+        return;
+    }
+
+    let passphrase = match credential_store_passphrase(allow_prompt) {
+        Some(passphrase) => passphrase,
+        None => {
+            log::warn!(
+                "Credential store exists at {} but no passphrase is available; credential-backed adapters will be skipped",
+                cred_path.display()
+            );
+            return;
+        }
+    };
+
+    let store = match CredentialStore::open(cred_path.clone(), passphrase) {
+        Ok(store) => store,
+        Err(error) => {
+            log::warn!("Failed to open credential store: {error}; proceeding without credentials");
+            return;
+        }
+    };
+
+    for adapter_id in CREDENTIAL_ADAPTER_IDS {
+        if credentials.contains_key(adapter_id) {
+            continue;
+        }
+
+        match store.retrieve(adapter_id) {
+            Ok(Some(secret)) => {
+                if let Ok(value) = secret.as_str() {
+                    credentials.insert(adapter_id.to_string(), value.to_string());
+                }
+            }
+            Ok(None) => {}
+            Err(error) => {
+                log::warn!(
+                    "Failed to decrypt credential for adapter '{}' from store: {error}",
+                    adapter_id
+                );
+            }
+        }
+    }
+}
+
+fn credential_store_passphrase(allow_prompt: bool) -> Option<String> {
+    match std::env::var("CSPY_CREDENTIAL_PASSPHRASE") {
+        Ok(passphrase) if !passphrase.trim().is_empty() => Some(passphrase),
+        _ if allow_prompt && stdin_is_interactive() => prompt_password("Credential store passphrase: ")
+            .ok()
+            .filter(|value| !value.trim().is_empty()),
+        _ => None,
+    }
+}
+
+fn stdin_is_interactive() -> bool {
+    io::stdin().is_terminal()
 }

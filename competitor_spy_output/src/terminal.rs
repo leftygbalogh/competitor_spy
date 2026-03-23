@@ -1,22 +1,14 @@
-// Terminal report renderer — T-014
-// Formats a finalised SearchRun to stdout as a plain-text table.
-// §4.6, §6.5, §9.2
+// Terminal report renderer — T-005 (V2 card layout, BC-005)
+// Formats a finalised SearchRun to stdout as a plain-text card display.
 
 use std::fmt::Write as FmtWrite;
 use std::io::{self, Write};
 
 use competitor_spy_domain::run::{AdapterResultStatus, SearchRun};
 
-// ── Column widths ────────────────────────────────────────────────────────────
+// ── Card separator ────────────────────────────────────────────────────────────
 
-const W_RANK:       usize = 4;
-const W_NAME:       usize = 28;
-const W_DIST:       usize = 9;
-const W_ADDRESS:    usize = 30;
-const W_PHONE:      usize = 16;
-const W_WEBSITE:    usize = 28;
-const W_KEYWORD:    usize = 9;
-const W_VISIBILITY: usize = 11;
+const CARD_SEP: &str = "--------------------------------------------------------------------------------";
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
@@ -36,7 +28,7 @@ pub fn render_stdout(run: &SearchRun, detail: bool) -> io::Result<()> {
 // ── Formatting ────────────────────────────────────────────────────────────────
 
 /// Build the full report as a String.
-pub fn format_run(run: &SearchRun, _detail: bool) -> String {
+pub fn format_run(run: &SearchRun, detail: bool) -> String {
     let mut buf = String::new();
 
     // ── Header ──────────────────────────────────────────────────────────────
@@ -49,33 +41,65 @@ pub fn format_run(run: &SearchRun, _detail: bool) -> String {
     }
     writeln!(buf).unwrap();
 
-    // ── Table header ─────────────────────────────────────────────────────────
-    let separator = build_separator();
-    writeln!(buf, "{}", build_header_row()).unwrap();
-    writeln!(buf, "{separator}").unwrap();
-
-    // ── Competitor rows ───────────────────────────────────────────────────────
+    // ── Competitor cards ─────────────────────────────────────────────────────
     if run.competitors.is_empty() {
+        writeln!(buf, "{CARD_SEP}").unwrap();
         writeln!(buf, "  (no competitors found)").unwrap();
+        writeln!(buf, "{CARD_SEP}").unwrap();
     } else {
         for c in &run.competitors {
-            let name    = field_val(&c.profile.name.value);
-            let address = field_val(&c.profile.address.value);
-            let phone   = field_val(&c.profile.phone.value);
-            let website = field_val(&c.profile.website.value);
-            let dist    = format!("{:.2} km", c.distance_km);
-            let kw      = format!("{}%", (c.keyword_score * 100.0).round() as u32);
-            let vis     = format!("{}%", (c.visibility_score * 100.0).round() as u32);
+            writeln!(buf, "{CARD_SEP}").unwrap();
 
-            writeln!(
-                buf,
-                "{}",
-                build_row(c.rank, &name, &dist, &address, &phone, &website, &kw, &vis)
-            ).unwrap();
+            // Name / rank / rating header line
+            let name = c.profile.name.value.as_deref().unwrap_or("(unknown)");
+            let rating_part = match (
+                c.profile.rating_text.value.as_deref(),
+                c.profile.review_count_text.value.as_deref(),
+            ) {
+                (Some(r), Some(cnt)) => format!(" | {}★ ({})", r, cnt),
+                (Some(r), None)      => format!(" | {}★", r),
+                _                    => String::new(),
+            };
+            writeln!(buf, "#{rank}  {name}{rating_part}", rank = c.rank).unwrap();
+            writeln!(buf, "{CARD_SEP}").unwrap();
+
+            if let Some(v) = &c.profile.address.value {
+                writeln!(buf, "{}", label_value("Address", v)).unwrap();
+            }
+            if let Some(v) = &c.profile.phone.value {
+                writeln!(buf, "{}", label_value("Phone", v)).unwrap();
+            }
+            if let Some(v) = &c.profile.website.value {
+                writeln!(buf, "{}", label_value("Website", v)).unwrap();
+            }
+            if let Some(v) = &c.profile.categories.value {
+                writeln!(buf, "{}", label_value("Categories", v)).unwrap();
+            }
+            if let Some(v) = &c.profile.opening_hours.value {
+                buf.push_str(&format_opening_hours(v));
+            }
+            if let Some(v) = &c.profile.price_level.value {
+                writeln!(buf, "{}", label_value("Price Level", v)).unwrap();
+            }
+            if let Some(v) = &c.profile.editorial_summary.value {
+                writeln!(buf, "{}", label_value("Editorial", v)).unwrap();
+            }
+            if detail {
+                for (i, review) in c.profile.reviews.iter().enumerate() {
+                    writeln!(
+                        buf,
+                        "Review {} ({}★, {}): {}",
+                        i + 1,
+                        review.rating,
+                        review.relative_time,
+                        review.text,
+                    )
+                    .unwrap();
+                }
+            }
         }
+        writeln!(buf, "{CARD_SEP}").unwrap();
     }
-
-    writeln!(buf, "{separator}").unwrap();
 
     // ── Footer: failed sources ────────────────────────────────────────────────
     let failed: Vec<_> = run
@@ -101,78 +125,22 @@ pub fn format_run(run: &SearchRun, _detail: bool) -> String {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-fn field_val(v: &Option<String>) -> String {
-    v.clone().unwrap_or_else(|| "--".to_string())
+/// Format a label/value pair with the label left-padded to 15 chars before ": ".
+fn label_value(label: &str, value: &str) -> String {
+    format!("{:<15}: {}", label, value)
 }
 
-fn trunc(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        s.to_string()
-    } else {
-        // Truncate at character boundary and add ellipsis
-        let end = s
-            .char_indices()
-            .nth(max - 1)
-            .map(|(i, _)| i)
-            .unwrap_or(s.len());
-        format!("{}…", &s[..end])
+/// Format opening hours: first line inline, continuation lines indented 17 chars.
+fn format_opening_hours(v: &str) -> String {
+    let mut out = String::new();
+    let mut lines = v.split('\n');
+    if let Some(first) = lines.next() {
+        writeln!(out, "{:<15}: {}", "Opening Hours", first).unwrap();
+        for line in lines {
+            writeln!(out, "                 {line}").unwrap();
+        }
     }
-}
-
-fn cell(s: &str, width: usize) -> String {
-    let truncated = trunc(s, width);
-    format!("{:<width$}", truncated, width = width)
-}
-
-fn build_separator() -> String {
-    format!(
-        "{}-{}-{}-{}-{}-{}-{}-{}",
-        "-".repeat(W_RANK),
-        "-".repeat(W_NAME),
-        "-".repeat(W_DIST),
-        "-".repeat(W_ADDRESS),
-        "-".repeat(W_PHONE),
-        "-".repeat(W_WEBSITE),
-        "-".repeat(W_KEYWORD),
-        "-".repeat(W_VISIBILITY),
-    )
-}
-
-fn build_header_row() -> String {
-    format!(
-        "{} {} {} {} {} {} {} {}",
-        cell("Rank", W_RANK),
-        cell("Name", W_NAME),
-        cell("Distance", W_DIST),
-        cell("Address", W_ADDRESS),
-        cell("Phone", W_PHONE),
-        cell("Website", W_WEBSITE),
-        cell("Keyword%", W_KEYWORD),
-        cell("Visibility%", W_VISIBILITY),
-    )
-}
-
-fn build_row(
-    rank: u32,
-    name: &str,
-    dist: &str,
-    address: &str,
-    phone: &str,
-    website: &str,
-    kw: &str,
-    vis: &str,
-) -> String {
-    format!(
-        "{} {} {} {} {} {} {} {}",
-        cell(&rank.to_string(), W_RANK),
-        cell(name, W_NAME),
-        cell(dist, W_DIST),
-        cell(address, W_ADDRESS),
-        cell(phone, W_PHONE),
-        cell(website, W_WEBSITE),
-        cell(kw, W_KEYWORD),
-        cell(vis, W_VISIBILITY),
-    )
+    out
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -182,7 +150,7 @@ mod tests {
     use super::*;
     use chrono::TimeZone;
     use competitor_spy_domain::{
-        profile::{BusinessProfile, Competitor, DataPoint, Confidence},
+        profile::{BusinessProfile, Competitor, Confidence, DataPoint, PlaceReview},
         query::{Location, Radius, SearchQuery},
         run::{AdapterResultStatus, ReasonCode, SearchRun, SourceResult},
     };
@@ -270,29 +238,55 @@ mod tests {
     fn render_contains_rank_numbers() {
         let run = make_run_done();
         let output = format_run(&run, false);
-        // rank 1 and 2 appear in first column
-        assert!(output.contains("1   "), "no rank 1 found in:\n{output}");
-        assert!(output.contains("2   "), "no rank 2 found in:\n{output}");
+        assert!(output.contains("#1  "), "no '#1  ' found in:\n{output}");
+        assert!(output.contains("#2  "), "no '#2  ' found in:\n{output}");
     }
 
+    // T-OUT-001: no truncation — 50-char name renders in full
     #[test]
-    fn render_contains_distance_formatted() {
+    fn t_out_001_no_truncation_long_name() {
+        let query = make_query();
+        let ts = chrono::Utc.with_ymd_and_hms(2026, 3, 21, 10, 0, 0).unwrap();
+        let mut run = SearchRun::new(query, ts);
+        run.start_validating();
+        run.start_geocoding();
+        run.set_location(make_location());
+        run.start_ranking();
+        let long_name = "A".repeat(50);
+        let mut profile = BusinessProfile::empty();
+        profile.name = DataPoint::present("name", &long_name, "test", Confidence::High);
+        let c = Competitor {
+            id: Uuid::new_v4(),
+            profile,
+            location: make_location(),
+            distance_km: 1.0,
+            keyword_score: 0.5,
+            visibility_score: 0.5,
+            rank: 1,
+        };
+        run.set_competitors(vec![c]);
+        run.complete(ts);
+        let output = format_run(&run, false);
+        assert!(
+            output.contains(&long_name),
+            "50-char name must appear in full:\n{output}"
+        );
+    }
+
+    // T-OUT-002: card separator present
+    #[test]
+    fn t_out_002_card_sep_present() {
         let run = make_run_done();
         let output = format_run(&run, false);
-        assert!(output.contains("1.20 km"), "got:\n{output}");
-        assert!(output.contains("2.50 km"), "got:\n{output}");
+        assert!(
+            output.contains(CARD_SEP),
+            "CARD_SEP must appear in output:\n{output}"
+        );
     }
 
+    // T-OUT-005: absent fields are silently omitted
     #[test]
-    fn render_contains_keyword_and_visibility_percentages() {
-        let run = make_run_done();
-        let output = format_run(&run, false);
-        assert!(output.contains("85%"), "got:\n{output}");
-        assert!(output.contains("70%"), "got:\n{output}");
-    }
-
-    #[test]
-    fn render_absent_field_displays_double_dash() {
+    fn t_out_005_absent_fields_silently_omitted() {
         let query = make_query();
         let ts = chrono::Utc.with_ymd_and_hms(2026, 3, 21, 10, 0, 0).unwrap();
         let mut run = SearchRun::new(query, ts);
@@ -315,8 +309,14 @@ mod tests {
         run.set_competitors(vec![c]);
         run.complete(ts);
         let output = format_run(&run, false);
-        // Phone and website are absent -> "--"
-        assert!(output.contains("--"), "absent field should be '--': {output}");
+        assert!(
+            !output.contains("Phone          :"),
+            "absent Phone label must not appear:\n{output}"
+        );
+        assert!(
+            !output.contains("Website        :"),
+            "absent Website label must not appear:\n{output}"
+        );
     }
 
     #[test]
@@ -365,22 +365,9 @@ mod tests {
         assert!(output.contains("(no competitors found)"), "got:\n{output}");
     }
 
+    // T-OUT-003: detail=false omits reviews
     #[test]
-    fn render_produces_column_headers() {
-        let run = make_run_done();
-        let output = format_run(&run, false);
-        assert!(output.contains("Rank"), "got:\n{output}");
-        assert!(output.contains("Name"), "got:\n{output}");
-        assert!(output.contains("Distance"), "got:\n{output}");
-        assert!(output.contains("Address"), "got:\n{output}");
-        assert!(output.contains("Phone"), "got:\n{output}");
-        assert!(output.contains("Website"), "got:\n{output}");
-        assert!(output.contains("Keyword%"), "got:\n{output}");
-        assert!(output.contains("Visibility%"), "got:\n{output}");
-    }
-
-    #[test]
-    fn render_long_name_truncated() {
+    fn t_out_003_detail_false_omits_reviews() {
         let query = make_query();
         let ts = chrono::Utc.with_ymd_and_hms(2026, 3, 21, 10, 0, 0).unwrap();
         let mut run = SearchRun::new(query, ts);
@@ -388,25 +375,68 @@ mod tests {
         run.start_geocoding();
         run.set_location(make_location());
         run.start_ranking();
-        let long_name = "A".repeat(50);
         let mut profile = BusinessProfile::empty();
-        profile.name = DataPoint::present("name", &long_name, "test", Confidence::High);
+        profile.name = DataPoint::present("name", "Review Studio", "test", Confidence::High);
+        profile.reviews = vec![PlaceReview {
+            text: "Fantastic class!".into(),
+            rating: 5,
+            relative_time: "1 week ago".into(),
+        }];
         let c = Competitor {
             id: Uuid::new_v4(),
             profile,
             location: make_location(),
-            distance_km: 1.0,
-            keyword_score: 0.5,
-            visibility_score: 0.5,
+            distance_km: 0.5,
+            keyword_score: 0.8,
+            visibility_score: 0.8,
             rank: 1,
         };
         run.set_competitors(vec![c]);
         run.complete(ts);
         let output = format_run(&run, false);
-        // Name column is 28 chars wide; long name must be truncated (no full 50-char string)
-        assert!(!output.contains(&long_name), "name should be truncated:\n{output}");
-        // Truncated name contains ellipsis
-        assert!(output.contains('…'), "truncated name should end with ellipsis:\n{output}");
+        assert!(
+            !output.contains("Review 1"),
+            "reviews must be hidden when detail=false:\n{output}"
+        );
+    }
+
+    // T-OUT-004: detail=true includes reviews
+    #[test]
+    fn t_out_004_detail_true_includes_reviews() {
+        let query = make_query();
+        let ts = chrono::Utc.with_ymd_and_hms(2026, 3, 21, 10, 0, 0).unwrap();
+        let mut run = SearchRun::new(query, ts);
+        run.start_validating();
+        run.start_geocoding();
+        run.set_location(make_location());
+        run.start_ranking();
+        let mut profile = BusinessProfile::empty();
+        profile.name = DataPoint::present("name", "Review Studio", "test", Confidence::High);
+        profile.reviews = vec![PlaceReview {
+            text: "Fantastic class!".into(),
+            rating: 5,
+            relative_time: "1 week ago".into(),
+        }];
+        let c = Competitor {
+            id: Uuid::new_v4(),
+            profile,
+            location: make_location(),
+            distance_km: 0.5,
+            keyword_score: 0.8,
+            visibility_score: 0.8,
+            rank: 1,
+        };
+        run.set_competitors(vec![c]);
+        run.complete(ts);
+        let output = format_run(&run, true);
+        assert!(
+            output.contains("Review 1 (5\u{2605}"),
+            "reviews must appear when detail=true:\n{output}"
+        );
+        assert!(
+            output.contains("Fantastic class!"),
+            "review text must appear:\n{output}"
+        );
     }
 
     #[test]
@@ -422,23 +452,19 @@ mod tests {
     fn snapshot_matches_expected_output() {
         let run = make_run_done();
         let output = format_run(&run, false);
-
-        // The snapshot checks structural properties of every line without
-        // hard-coding inter-column spaces, making it robust to minor width tweaks.
         let lines: Vec<&str> = output.lines().collect();
 
         // Header block
         assert!(lines[0].contains("Competitor Spy Report"));
-        // Column header row contains all columns
-        let header_line = lines.iter().find(|l| l.contains("Rank")).unwrap();
-        assert!(header_line.contains("Name"));
-        assert!(header_line.contains("Distance"));
-        assert!(header_line.contains("Keyword%"));
-        assert!(header_line.contains("Visibility%"));
+        assert!(output.contains("Industry : yoga studio"));
+        assert!(output.contains("Location : Amsterdam, Netherlands"));
 
-        // At least one data row per competitor
-        assert!(output.contains("Zen Yoga Amsterdam"));
-        assert!(output.contains("Power Flow Studio"));
+        // Card separators exist
+        assert!(output.contains(CARD_SEP), "card separator missing");
+
+        // Rank header lines
+        assert!(output.contains("#1  Zen Yoga Amsterdam"), "rank 1 card header");
+        assert!(output.contains("#2  Power Flow Studio"), "rank 2 card header");
 
         // Footer
         assert!(output.contains("Failed sources:"));

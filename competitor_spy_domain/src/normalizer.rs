@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 
-use crate::profile::{BusinessProfile, Competitor, Confidence, DataPoint};
+use crate::profile::{BusinessProfile, Competitor, Confidence, DataPoint, PlaceReview};
 use crate::query::Location;
 use crate::run::RawRecord;
 
@@ -68,8 +68,33 @@ fn build_profile(fields: &HashMap<String, String>, source_id: &str) -> BusinessP
         review_count_text: make_dp("review_count_text", fields, source_id),
         editorial_summary: make_dp("editorial_summary", fields, source_id),
         price_level:       make_dp("price_level",       fields, source_id),
-        reviews:           Vec::new(),
+        reviews:           parse_reviews_json(fields),
     }
+}
+
+/// Parse the `reviews_json` field (a JSON array string set by the Google Places
+/// adapter) into a `Vec<PlaceReview>`. Returns empty vec on any error or absence.
+fn parse_reviews_json(fields: &HashMap<String, String>) -> Vec<PlaceReview> {
+    let json_str = match fields.get("reviews_json") {
+        Some(s) => s,
+        None => return Vec::new(),
+    };
+    let values: Vec<serde_json::Value> = match serde_json::from_str(json_str) {
+        Ok(v) => v,
+        Err(_) => return Vec::new(),
+    };
+    values
+        .into_iter()
+        .filter_map(|v| {
+            let text = v["text"].as_str()?.to_string();
+            let rating = v["rating"].as_u64()? as u8;
+            let relative_time = v.get("relative_time")
+                .and_then(|t| t.as_str())
+                .unwrap_or("")
+                .to_string();
+            Some(PlaceReview { text, rating, relative_time })
+        })
+        .collect()
 }
 
 fn haversine_km(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {

@@ -163,6 +163,13 @@ impl GooglePlacesAdapter {
     }
 }
 
+// Field masks for the Google Places API (New).
+// EXTENDED includes atmosphere/pro fields (editorial, price, reviews); some API
+// keys require separate billing for these. If Google returns 400, we fall back
+// to BASIC so the run still yields results.
+const FIELD_MASK_EXTENDED: &str = "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.userRatingCount,places.location,places.editorialSummary,places.priceLevel,places.regularOpeningHours,places.reviews";
+const FIELD_MASK_BASIC: &str    = "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.userRatingCount,places.location";
+
 #[async_trait]
 impl SourceAdapter for GooglePlacesAdapter {
     fn adapter_id(&self) -> &str {
@@ -201,13 +208,13 @@ impl SourceAdapter for GooglePlacesAdapter {
             radius.km_value() as f64 * 1000.0,
         );
 
-        let response = match self.client
+        // Try extended field mask first (editorial summary, price, reviews).
+        // Fall back to basic fields if Google returns 400 — this happens when
+        // the API key's billing tier does not include atmosphere/pro fields.
+        let mut response = match self.client
             .post(&url)
             .header("X-Goog-Api-Key", api_key)
-            .header(
-                "X-Goog-FieldMask",
-                "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.types,places.rating,places.userRatingCount,places.location,places.editorialSummary,places.priceLevel,places.regularOpeningHours,places.reviews",
-            )
+            .header("X-Goog-FieldMask", FIELD_MASK_EXTENDED)
             .json(&request_body)
             .send()
             .await
@@ -218,6 +225,24 @@ impl SourceAdapter for GooglePlacesAdapter {
                 return failed_result(ReasonCode::Timeout);
             }
         };
+
+        if response.status().as_u16() == 400 {
+            warn!(event = "adapter_result", adapter_id = "google_places", outcome = "extended_fields_400_fallback");
+            response = match self.client
+                .post(&url)
+                .header("X-Goog-Api-Key", api_key)
+                .header("X-Goog-FieldMask", FIELD_MASK_BASIC)
+                .json(&request_body)
+                .send()
+                .await
+            {
+                Ok(r) => r,
+                Err(_) => {
+                    warn!(event = "adapter_result", adapter_id = "google_places", outcome = "timeout");
+                    return failed_result(ReasonCode::Timeout);
+                }
+            };
+        }
 
         let status = response.status();
         if status.is_client_error() {
@@ -325,15 +350,13 @@ fn place_to_record(p: GooglePlace) -> RawRecord {
         fields.insert("website".to_string(), web);
     }
     if !p.types.is_empty() {
-        fields.insert("types".to_string(), p.types.join(", "));
-        // Use first type as category
-        fields.insert("category".to_string(), p.types[0].clone());
+        fields.insert("categories".to_string(), p.types.join(", "));
     }
     if let Some(r) = p.rating {
-        fields.insert("rating".to_string(), r.to_string());
+        fields.insert("rating_text".to_string(), r.to_string());
     }
     if let Some(rc) = p.user_rating_count {
-        fields.insert("review_count".to_string(), rc.to_string());
+        fields.insert("review_count_text".to_string(), rc.to_string());
     }
     if let Some(loc) = p.location {
         fields.insert("lat".to_string(), loc.latitude.to_string());
@@ -507,10 +530,9 @@ mod tests {
         assert_eq!(rec.fields["address"], "Prinsengracht 1, Amsterdam, Netherlands");
         assert_eq!(rec.fields["phone"], "+31 20 123 4567");
         assert_eq!(rec.fields["website"], "https://alpha.example.com");
-        assert_eq!(rec.fields["types"], "yoga_studio, gym, establishment");
-        assert_eq!(rec.fields["category"], "yoga_studio");
-        assert_eq!(rec.fields["rating"], "4.7");
-        assert_eq!(rec.fields["review_count"], "210");
+        assert_eq!(rec.fields["categories"], "yoga_studio, gym, establishment");
+        assert_eq!(rec.fields["rating_text"], "4.7");
+        assert_eq!(rec.fields["review_count_text"], "210");
         assert_eq!(rec.fields["lat"], "52.37");
         assert_eq!(rec.fields["adapter_id"], "google_places");
     }
@@ -703,6 +725,35 @@ mod tests {
         assert_eq!(arr[0]["text"], "Excellent facilities!");
         assert_eq!(arr[0]["rating"], 5);
         assert_eq!(arr[0]["relative_time"], "a week ago");
+    }
+
+    // T-ADP-006: HTTP 400 on extended field mask falls back to basic field mask
+    #[tokio::test]
+    async fn t_adp_006_400_on_extended_falls_back_to_basic() {
+        let mock = MockServer::start().await;
+        // 200 with one result — handles the fallback (basic field mask) request
+        Mock::given(method("POST"))
+            .and(path("/v1/places:searchText"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "places": [{
+                    "id": "p1",
+                    "displayName": { "text": "Fallback Studio" },
+                    "location": { "latitude": 52.0, "longitude": 4.0 }
+                }]
+            })))
+            .mount(&mock)
+            .await;
+        // 400 once — LIFO priority means this fires on the first (extended) request
+        Mock::given(method("POST"))
+            .and(path("/v1/places:searchText"))
+            .respond_with(ResponseTemplate::new(400))
+            .up_to_n_times(1)
+            .mount(&mock)
+            .await;
+        let a = GooglePlacesAdapter::with_client(make_client(), mock.uri());
+        let result = a.collect(&make_query(), amsterdam(), Radius::Km10, Some("key")).await;
+        assert!(matches!(result.status, AdapterResultStatus::Success));
+        assert_eq!(result.records.len(), 1, "fallback should yield one result");
     }
 
     // T-ADP-005: when v2 fields absent, record is still valid (no panic, no key)

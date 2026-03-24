@@ -33,15 +33,27 @@ macro_rules! ensure_space {
 
 // ── Filename format ───────────────────────────────────────────────────────────
 
-/// Generate the PDF filename from the run's completed_at timestamp.
-/// Format: `competitor_spy_report_YYYYMMDD_HHMMSS_UTC.pdf`
+/// Slugify a string: lowercase, strip non-alphanumeric, collapse spaces to nothing.
+fn slugify(s: &str) -> String {
+    s.chars()
+        .filter_map(|c| {
+            if c.is_alphanumeric() { Some(c.to_ascii_lowercase()) }
+            else if c == ' ' || c == '-' || c == ',' { None }
+            else { None }
+        })
+        .collect()
+}
+
+/// Generate the PDF filename embedding query parameters and timestamp.
+/// Format: `{industry}_{location}_{radius}km_{YYYYMMDD}_{HHMMSS}_UTC.pdf`
+/// Example: `pilates_stpoelten_10km_20260324_174658_UTC.pdf`
 pub fn pdf_filename(run: &SearchRun) -> String {
-    let ts = run
-        .completed_at
-        .or(Some(run.started_at))
-        .unwrap_or(run.started_at);
-    ts.format("competitor_spy_report_%Y%m%d_%H%M%S_UTC.pdf")
-        .to_string()
+    let industry = slugify(&run.query.industry);
+    let location = slugify(&run.query.location_input);
+    let radius   = run.query.radius.km_value();
+    let ts = run.completed_at.unwrap_or(run.started_at);
+    let stamp = ts.format("%Y%m%d_%H%M%S_UTC").to_string();
+    format!("{industry}_{location}_{radius}km_{stamp}.pdf")
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -360,7 +372,8 @@ mod tests {
     fn pdf_filename_format_is_correct() {
         let run = make_run();
         let name = pdf_filename(&run);
-        assert_eq!(name, "competitor_spy_report_20260321_143022_UTC.pdf");
+        // industry=yoga studio → yogastudio, location=Amsterdam, Netherlands → amsterdamnetherlands, radius=10km
+        assert_eq!(name, "yogastudio_amsterdamnetherlands_10km_20260321_143022_UTC.pdf");
     }
 
     #[test]
@@ -403,7 +416,7 @@ mod tests {
         assert!(path.exists(), "file was not created at {path:?}");
         assert_eq!(
             path.file_name().and_then(|n| n.to_str()).unwrap(),
-            "competitor_spy_report_20260321_143022_UTC.pdf"
+            "yogastudio_amsterdamnetherlands_10km_20260321_143022_UTC.pdf"
         );
         let meta = std::fs::metadata(&path).unwrap();
         assert!(meta.len() > 0, "file must not be empty");

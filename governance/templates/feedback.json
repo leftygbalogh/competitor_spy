@@ -1,7 +1,7 @@
 {
   "$schema": "feedback-schema-v1",
-  "description": "Snake project stage-by-stage process feedback; no template changes apply until explicitly approved by Lefty.",
-  "project_id": "python-terminal-snake-game-2026-03-20",
+  "description": "Competitor Spy V2 post-mortem process feedback for governance template improvement.",
+  "project_id": "competitor-spy-v2-2026-03",
   "entries": [
     {
       "stage": 1,
@@ -212,7 +212,63 @@
       "before": "Bootstrap rules verify repository identity after clone but do not prompt for a new remote URL when governance mode is Project",
       "after": "Recommend: when GOVERNANCE_MODE.md is set to 'Project' (not 'Template'), Stage 1 discovery must include an explicit step: ask the user for the target remote repository URL, run 'git remote -v' to show the current origin, and require the user to confirm or replace it before any commits are pushed. This prevents project code being pushed to the template repository by mistake.",
       "reasoning": "In the Competitor Spy project, the cloned workspace origin still pointed to AI_Governance_Template.git. Code was being pushed to the template repo until the remote was manually repointed. This should be a mandatory Stage 1 gate, not an optional reminder."
+    },
+    {
+      "project_id": "competitor-spy-v2-2026-03",
+      "stage": 1,
+      "role": "team-lead",
+      "doc": "copilot-instructions.md",
+      "subsection": "New Project Bootstrap Rules",
+      "change_type": "add",
+      "before": "No check for ambiguous local directory names at session start.",
+      "after": "Add rule: at session start, agent must print cwd and verify it matches the expected active repo. When multiple similarly-named directories exist (e.g. competitor_spy2 vs Competitor_Spy_V2), agent must explicitly confirm with the user which is the working target before issuing any build or git command.",
+      "reasoning": "Significant time was lost because the agent was editing and building from the wrong repo path. A one-line cwd confirmation at session start would have caught this immediately."
+    },
+    {
+      "project_id": "competitor-spy-v2-2026-03",
+      "stage": 4,
+      "role": "rust-backend-specialist",
+      "doc": "02_WORKFLOW_STAGES.md",
+      "subsection": "Stage 4 Build Verification",
+      "change_type": "modify",
+      "before": "Passing tests are sufficient to close Stage 4.",
+      "after": "For projects integrating external paid APIs: at least one live end-to-end run against real services must succeed with non-zero record counts per adapter before Stage 4 is approved. Mock-green is necessary but not sufficient.",
+      "reasoning": "All mock tests passed while credential decryption, wrong field masks, and pagination gaps caused zero live results. The live failure was only caught when the user ran the tool independently."
+    },
+    {
+      "project_id": "competitor-spy-v2-2026-03",
+      "stage": 2,
+      "role": "greenfield-formal-spec-author",
+      "doc": "FORMAL_SPEC.md",
+      "subsection": "Credential Model",
+      "change_type": "add",
+      "before": "Credential acquisition not specified beyond 'env var or store'.",
+      "after": "Spec must define passphrase acquisition order (env var first, then interactive prompt) and must explicitly state that interactive prompts must be suppressed in test contexts. Acceptance criterion: tests must complete without blocking on stdin.",
+      "reasoning": "Credential prompt in tests caused hangs that required multiple debug cycles. Explicit spec constraints would have driven a correct design from the start."
+    },
+    {
+      "project_id": "competitor-spy-v2-2026-03",
+      "stage": 5,
+      "role": "team-lead",
+      "doc": "RELEASE_CHECKLIST.md",
+      "subsection": "Pre-release",
+      "change_type": "add",
+      "before": "No layout review step at release.",
+      "after": "Add checklist item: verify repo root contains no stray generated files (PDFs, test artefacts, data dumps). Confirm output directories are gitignored. Confirm governance and source code are in clearly separated folders.",
+      "reasoning": "V2 initially shipped with old PDFs and easter egg data files in the repo root. A layout check at release would have caught this before tagging."
+    },
+    {
+      "project_id": "competitor-spy-v2-2026-03",
+      "stage": 6,
+      "role": "team-lead",
+      "doc": "IMPLEMENTATION_CHRONICLE.md",
+      "subsection": "Entry Format",
+      "change_type": "modify",
+      "before": "Chronicle entries have no required verification artifact field.",
+      "after": "Add mandatory field 'verification_artifact' to each entry: terminal output snippet, test name with pass result, or explicit note that verification was deferred with reason. Entries without this field are incomplete.",
+      "reasoning": "False Stage 4/5 completion claims required a full session reset. A verification artifact requirement makes premature closure structurally harder."
     }
-  ]
+  ],
+  "owner_additions": []
 }
 

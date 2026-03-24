@@ -33,26 +33,24 @@ macro_rules! ensure_space {
 
 // ── Filename format ───────────────────────────────────────────────────────────
 
-/// Slugify a string: lowercase, strip non-alphanumeric, collapse spaces to nothing.
-fn slugify(s: &str) -> String {
+/// Slugify a string: lowercase, keep only alphanumeric, cap at `max_len` chars.
+fn slugify(s: &str, max_len: usize) -> String {
     s.chars()
-        .filter_map(|c| {
-            if c.is_alphanumeric() { Some(c.to_ascii_lowercase()) }
-            else if c == ' ' || c == '-' || c == ',' { None }
-            else { None }
-        })
+        .filter(|c| c.is_alphanumeric())
+        .map(|c| c.to_ascii_lowercase())
+        .take(max_len)
         .collect()
 }
 
 /// Generate the PDF filename embedding query parameters and timestamp.
-/// Format: `{industry}_{location}_{radius}km_{YYYYMMDD}_{HHMMSS}_UTC.pdf`
-/// Example: `pilates_stpoelten_10km_20260324_174658_UTC.pdf`
+/// Format: `{industry}_{location}_{radius}km_{YYYYMMDD}_{HHMM}.pdf`
+/// Example: `pilates_stpoelten_10km_20260324_1746.pdf`
 pub fn pdf_filename(run: &SearchRun) -> String {
-    let industry = slugify(&run.query.industry);
-    let location = slugify(&run.query.location_input);
+    let industry = slugify(&run.query.industry, 10);
+    let location = slugify(&run.query.location_input, 10);
     let radius   = run.query.radius.km_value();
     let ts = run.completed_at.unwrap_or(run.started_at);
-    let stamp = ts.format("%Y%m%d_%H%M%S_UTC").to_string();
+    let stamp = ts.format("%Y%m%d_%H%M").to_string();
     format!("{industry}_{location}_{radius}km_{stamp}.pdf")
 }
 
@@ -372,8 +370,8 @@ mod tests {
     fn pdf_filename_format_is_correct() {
         let run = make_run();
         let name = pdf_filename(&run);
-        // industry=yoga studio → yogastudio, location=Amsterdam, Netherlands → amsterdamnetherlands, radius=10km
-        assert_eq!(name, "yogastudio_amsterdamnetherlands_10km_20260321_143022_UTC.pdf");
+        // industry="yoga studio" → yogastudio (10), location="Amsterdam, Netherlands" → amsterdamn (10 chars), radius=10km
+        assert_eq!(name, "yogastudio_amsterdamn_10km_20260321_1430.pdf");
     }
 
     #[test]
@@ -416,7 +414,7 @@ mod tests {
         assert!(path.exists(), "file was not created at {path:?}");
         assert_eq!(
             path.file_name().and_then(|n| n.to_str()).unwrap(),
-            "yogastudio_amsterdamnetherlands_10km_20260321_143022_UTC.pdf"
+            "yogastudio_amsterdamn_10km_20260321_1430.pdf"
         );
         let meta = std::fs::metadata(&path).unwrap();
         assert!(meta.len() > 0, "file must not be empty");

@@ -269,6 +269,18 @@
       "reasoning": "False Stage 4/5 completion claims required a full session reset. A verification artifact requirement makes premature closure structurally harder."
     }
   ],
-  "owner_additions": []
+  "owner_additions": [
+    {
+      "project_id": "competitor-spy-v2-2026-03",
+      "stage": 1,
+      "role": "product-owner",
+      "doc": "02_WORKFLOW_STAGES.md / copilot-instructions.md",
+      "subsection": "New Project Bootstrap Rules",
+      "change_type": "add",
+      "before": "No canonical folder layout defined at project start. Source, governance docs, generated output, and scripts accumulate in the repo root over time.",
+      "after": "Define a mandatory canonical project layout as part of the T-000 bootstrap task. At minimum: src/ for all source code and crates, governance/ for all spec and process documents (agents/, templates/ nested under it), reports/ or output/ for generated artefacts (gitignored), scripts/ for automation, docs/ for ADRs and evidence. Layout must be established and committed before any source files are created. A layout diagram should be included in README.md.",
+      "reasoning": "By V2 close the repo root contained PDFs, easter egg JSON files, test output files, and governance docs all mixed together with Cargo.toml. Cleaning this up required a dedicated restructure session. A mandatory layout template at T-000 would have prevented this entirely and made the project navigable from day one."
+    }
+  ]
 }
 

@@ -177,7 +177,10 @@ fn age_decrypt(ciphertext: &[u8], passphrase: &str) -> Result<Vec<u8>, age::Decr
         _ => return Err(age::DecryptError::DecryptionFailed),
     };
     let mut plaintext = Vec::new();
-    let mut reader = decryptor.decrypt(&Secret::new(passphrase.to_owned()), None)?;
+    // Accept high-work-factor entries from older/newer age clients.
+    // This avoids false decryption failures when a credential was encrypted
+    // with stronger scrypt parameters than the default threshold.
+    let mut reader = decryptor.decrypt(&Secret::new(passphrase.to_owned()), Some(20))?;
     reader.read_to_end(&mut plaintext).map_err(|_| age::DecryptError::DecryptionFailed)?;
     Ok(plaintext)
 }

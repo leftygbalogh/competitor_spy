@@ -1,3 +1,7 @@
 examples/
 target/
 Cargo.lock
+
+# PDF reports are runtime output — ignore contents but keep the folder
+reports/*
+!reports/.gitkeep

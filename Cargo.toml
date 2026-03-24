@@ -1,12 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-    "competitor_spy_domain",
-    "competitor_spy_adapters",
-    "competitor_spy_output",
-    "competitor_spy_credentials",
-    "competitor_spy_telemetry",
-    "competitor_spy_cli",
+    "src/competitor_spy_domain",
+    "src/competitor_spy_adapters",
+    "src/competitor_spy_output",
+    "src/competitor_spy_credentials",
+    "src/competitor_spy_telemetry",
+    "src/competitor_spy_cli",
 ]
 
 [workspace.package]
@@ -61,9 +61,6 @@ rpassword = "7"
 
 # Mock HTTP server for tests
 wiremock = "0.6"
-
-# Home/data directory resolution
-dirs = "5"
 
 # Random number generation (pacing policy; seeded determinism in tests)
 rand = { version = "0.8", features = ["small_rng"] }

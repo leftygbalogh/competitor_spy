@@ -179,12 +179,11 @@ pub async fn run_with_urls(
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/// Resolve the default PDF output directory per DT-003:
-/// `~/competitor-spy/reports`, falling back to the current directory.
+/// Resolve the default PDF output directory.
+/// Uses `./reports` relative to the working directory so reports land inside
+/// the project tree, falling back to the current directory on failure.
 pub fn default_output_dir() -> PathBuf {
-    let base = dirs::home_dir()
-        .unwrap_or_else(|| PathBuf::from("."));
-    let dir = base.join("competitor-spy").join("reports");
+    let dir = PathBuf::from("reports");
     if std::fs::create_dir_all(&dir).is_ok() {
         dir
     } else {

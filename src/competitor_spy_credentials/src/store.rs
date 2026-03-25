@@ -14,6 +14,7 @@ use std::{
     path::PathBuf,
 };
 use thiserror::Error;
+use zeroize::Zeroizing;
 
 // ---------------------------------------------------------------------------
 // Public error type
@@ -64,6 +65,10 @@ impl Drop for SecretValue {
         }
         // Volatile write to prevent optimiser from eliding the zeroing.
         if !self.0.is_empty() {
+            // SAFETY: `self.0.as_mut_ptr()` is valid and non-null because
+            // `self.0.is_empty()` is false, guaranteeing at least one byte.
+            // `write_volatile` ensures the compiler does not elide this write
+            // even though the memory is immediately freed after Drop completes.
             unsafe {
                 std::ptr::write_volatile(self.0.as_mut_ptr(), 0);
             }
@@ -83,7 +88,9 @@ impl Drop for SecretValue {
 /// written on every mutation.
 pub struct CredentialStore {
     path: PathBuf,
-    passphrase: String,
+    /// SEC-003: passphrase is wrapped in `Zeroizing` so heap memory is
+    /// overwritten with zeroes when `CredentialStore` is dropped.
+    passphrase: Zeroizing<String>,
     /// adapter_id -> base64-encoded age ciphertext
     entries: HashMap<String, String>,
 }
@@ -102,7 +109,7 @@ impl CredentialStore {
         } else {
             HashMap::new()
         };
-        Ok(Self { path, passphrase, entries })
+        Ok(Self { path, passphrase: Zeroizing::new(passphrase), entries })
     }
 
     /// Encrypt `plaintext` and store it under `adapter_id`, overwriting any

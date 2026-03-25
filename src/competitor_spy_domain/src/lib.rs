@@ -10,3 +10,4 @@ pub mod run;
 pub mod ranking;
 pub mod scoring;
 pub mod normalizer;
+pub mod enrichment;

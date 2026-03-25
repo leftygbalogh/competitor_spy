@@ -61,6 +61,18 @@ struct Cli {
     /// Seed for request pacing (overrides CSPY_PACING_SEED env var)
     #[arg(long)]
     pacing_seed: Option<u64>,
+
+    /// Disable website enrichment scraping (V3)
+    #[arg(long, default_value_t = false)]
+    no_enrichment: bool,
+
+    /// Allow insecure TLS when fetching competitor websites (V3)
+    #[arg(long, default_value_t = false)]
+    allow_insecure_tls: bool,
+
+    /// HTTP timeout in seconds for website enrichment requests (V3; default 15)
+    #[arg(long, default_value_t = 15)]
+    enrichment_timeout: u64,
 }
 
 #[derive(Subcommand, Debug)]
@@ -110,8 +122,8 @@ async fn run() -> i32 {
         }
     };
 
-    // Pacing seed: CLI flag > env var (informational for now; passed to registry in future)
-    let _pacing_seed: Option<u64> = cli.pacing_seed.or_else(|| {
+    // Pacing seed: CLI flag > env var
+    let pacing_seed: Option<u64> = cli.pacing_seed.or_else(|| {
         std::env::var("CSPY_PACING_SEED")
             .ok()
             .and_then(|s| s.parse().ok())
@@ -134,6 +146,10 @@ async fn run() -> i32 {
         cli.detail,
         AdapterUrls::production(),
         HashMap::new(),
+        cli.no_enrichment,
+        cli.allow_insecure_tls,
+        cli.enrichment_timeout,
+        pacing_seed,
     )
     .await
 }
@@ -152,7 +168,13 @@ fn run_credentials(action: CredentialAction) -> i32 {
         }
     };
 
-    let cred_path = credential_store_path();
+    let cred_path = match credential_store_path() {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("error: {e}");
+            return 1;
+        }
+    };
 
     // Ensure parent directory exists before opening/creating the store.
     if let Some(parent) = cred_path.parent() {

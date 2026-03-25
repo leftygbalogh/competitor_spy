@@ -14,7 +14,9 @@ use competitor_spy_adapters::{
     adapter::{Geocoder, GeocodingError},
     nominatim::{NominatimAdapter, NominatimGeocoder},
     osm_overpass::OsmOverpassAdapter,
+    pacing::PacingPolicy,
     registry::SourceRegistry,
+    web_enricher::{EnricherConfig, WebEnricher},
     yelp::YelpAdapter,
     google_places::GooglePlacesAdapter,
 };
@@ -72,7 +74,19 @@ pub async fn run_with_urls(
     detail: bool,
     urls: AdapterUrls,
     extra_credentials: HashMap<String, String>,
+    no_enrichment: bool,
+    allow_insecure_tls: bool,
+    enrichment_timeout_secs: u64,
+    pacing_seed: Option<u64>,
 ) -> i32 {
+    // Guard (SEC-005): reject --output-dir values containing path traversal sequences.
+    if let Some(ref dir) = output_dir {
+        if dir.components().any(|c| c == std::path::Component::ParentDir) {
+            eprintln!("error: --output-dir must not contain path traversal sequences (..)");
+            return 1;
+        }
+    }
+
     // 1. Validate query
     let radius = match Radius::try_from(radius_km) {
         Ok(r) => r,
@@ -111,9 +125,15 @@ pub async fn run_with_urls(
     run.set_location(location.clone());
 
     // 4. Load credentials
-    let cred_path = credential_store_path();
     let mut credentials: HashMap<String, String> = extra_credentials;
-    load_stored_credentials(&cred_path, &mut credentials, urls.is_production());
+    match credential_store_path() {
+        Ok(cred_path) => {
+            load_stored_credentials(&cred_path, &mut credentials, urls.is_production());
+        }
+        Err(e) => {
+            log::warn!("{e}; credential-backed adapters will be skipped");
+        }
+    }
 
     // 5. Build registry and run all adapters concurrently
     let mut registry = SourceRegistry::new();
@@ -137,11 +157,42 @@ pub async fn run_with_urls(
         run.add_source_result(result);
     }
 
-    // 7. Normalise → deduplicate → rank
+    // 7. Normalise → deduplicate → [enrich →] rank
+    let competitors_pre_rank = normalizer::normalize(raw_records, &location);
+    let competitors_pre_rank = deduplicate(competitors_pre_rank);
+
+    if !no_enrichment {
+        run.start_enriching();
+        let pacing = match pacing_seed {
+            Some(seed) => PacingPolicy::from_seed(seed, false),
+            None => PacingPolicy::new(),
+        };
+        let cfg = EnricherConfig {
+            timeout_secs: enrichment_timeout_secs,
+            allow_insecure_tls,
+        };
+        // reqwest::blocking must not run on the async executor thread — offload to
+        // the blocking thread pool so the runtime remains responsive.
+        let competitors_for_enrich = competitors_pre_rank.clone();
+        let enrichments = tokio::task::spawn_blocking(move || {
+            match WebEnricher::new(cfg) {
+                Ok(enricher) => enricher.enrich(&competitors_for_enrich, &pacing),
+                Err(e) => {
+                    log::warn!("Failed to initialise WebEnricher: {e}; proceeding without enrichment");
+                    vec![]
+                }
+            }
+        })
+        .await
+        .unwrap_or_else(|e| {
+            log::warn!("Enrichment task panicked: {e}; proceeding without enrichment");
+            vec![]
+        });
+        run.set_enrichments(enrichments);
+    }
+
     run.start_ranking();
-    let competitors = normalizer::normalize(raw_records, &location);
-    let competitors = deduplicate(competitors);
-    let competitors = DefaultRankingEngine::new().rank(competitors, &query);
+    let competitors = DefaultRankingEngine::new().rank(competitors_pre_rank, &query);
     run.set_competitors(competitors);
 
     // 8. Complete the run
@@ -180,9 +231,24 @@ pub async fn run_with_urls(
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /// Resolve the default PDF output directory.
-/// Uses `./reports` relative to the working directory so reports land inside
-/// the project tree, falling back to the current directory on failure.
+/// Returns the `reports/` directory anchored to the project root.
+///
+/// The project root is derived from the running binary's location:
+/// `<exe>` lives at `target/{debug,release}/competitor-spy[.exe]`, so
+/// three `.parent()` calls reach `Competitor_Spy_V2/`.
+/// Falls back to `./reports` relative to CWD if the binary path cannot
+/// be resolved (e.g. unusual install layouts).
 pub fn default_output_dir() -> PathBuf {
+    if let Ok(exe) = std::env::current_exe() {
+        // exe → target/{debug,release}/ → target/ → project root
+        if let Some(project_root) = exe.parent().and_then(|p| p.parent()).and_then(|p| p.parent()) {
+            let dir = project_root.join("reports");
+            if std::fs::create_dir_all(&dir).is_ok() {
+                return dir;
+            }
+        }
+    }
+    // Fallback: relative to CWD
     let dir = PathBuf::from("reports");
     if std::fs::create_dir_all(&dir).is_ok() {
         dir
@@ -191,21 +257,29 @@ pub fn default_output_dir() -> PathBuf {
     }
 }
 
-pub fn credential_store_path() -> PathBuf {
+/// SEC-006: returns `Err` when neither `APPDATA` (Windows) nor `HOME` (Unix)
+/// is set.  Callers must never silently fall back to a CWD-relative path.
+pub fn credential_store_path() -> Result<PathBuf, String> {
     #[cfg(windows)]
     {
-        let appdata = std::env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
-        PathBuf::from(appdata)
+        let appdata = std::env::var("APPDATA").map_err(|_| {
+            "APPDATA environment variable is not set; cannot locate the credential store"
+                .to_string()
+        })?;
+        Ok(PathBuf::from(appdata)
             .join("competitor-spy")
-            .join("credentials")
+            .join("credentials"))
     }
     #[cfg(not(windows))]
     {
-        let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-        PathBuf::from(home)
+        let home = std::env::var("HOME").map_err(|_| {
+            "HOME environment variable is not set; cannot locate the credential store"
+                .to_string()
+        })?;
+        Ok(PathBuf::from(home)
             .join(".config")
             .join("competitor-spy")
-            .join("credentials")
+            .join("credentials"))
     }
 }
 

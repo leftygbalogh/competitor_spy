@@ -449,3 +449,200 @@ _(none yet)_
 - Approved by: Team Lead Agent (delegated)
 - Approval date: 2026-03-22
 - Notes: Six tasks T-019 through T-024 cover domain extension, adapter expansion, CLI flag, two renderers, and acceptance + live E2E. No code work begins until this approval is recorded. V1 output contract preserved when `--detail` is absent.
+
+---
+
+## V3 Task Backlog (Website Enrichment)
+
+Source spec: `FORMAL_SPEC.md` §13 (CSPY-SPEC-003, approved 2026-03-24)
+Plan ID: CSPY-PLAN-003
+Approver: Team Lead Agent (delegated by Lefty 2026-03-24)
+Status: APPROVED — Team Lead Agent, 2026-03-24
+
+Convention: Tasks are ordered for sequential implementation. All V1/V2 tasks remain done and unmodified. V3 tasks are numbered T-025 onwards.
+
+### T-025: Domain — WebEnrichment entity, FetchStatus, EnrichmentErrorCode, coverage metric
+
+- Source: FORMAL_SPEC.md §13.1 (entities), §13.2.9 (FR-V3-008), §13.2.10 (FR-V3-009)
+- Status: NOT STARTED
+- Dependencies: T-001 (domain crate), T-002 (BusinessProfile)
+- Output:
+  - `competitor_spy_domain/src/enrichment.rs` — `WebEnrichment`, `FetchStatus`, `EnrichmentErrorCode` types
+  - `competitor_spy_domain/src/run.rs` (extended) — `SearchRun` gains `enrichments: Vec<WebEnrichment>`, `enrichment_coverage: f64`
+  - `enrichment_coverage()` function: `count(≥1 extracted field) / total`, returns `f64`
+  - Unit tests: coverage = 0 when empty; coverage = 1.0 when all enriched; coverage = 0.5 for mixed; all fields None when FetchStatus::Failed
+- Evidence: `cargo test -p competitor_spy_domain` — all existing plus new enrichment tests pass
+- Chronicle: [C]
+
+---
+
+### T-026: Extractor — Pricing
+
+- Source: FORMAL_SPEC.md §13.2.4 (FR-V3-003)
+- Status: NOT STARTED
+- Dependencies: T-025
+- Output:
+  - `competitor_spy_adapters/src/extractors/pricing.rs` — pure function `extract_pricing(html: &str) -> Option<String>`
+  - Test fixture: `tests/fixtures/enrichment/fixture_pricing_table_de.html`
+  - Test fixture: `tests/fixtures/enrichment/fixture_no_content.html`
+  - Unit tests: pricing table with `€` → Some(text); list items with price notation → Some(text); no price elements → None; malformed HTML → None
+- Evidence: `cargo test -p competitor_spy_adapters -- extractors::pricing` — all pass including nil case
+- Chronicle: [C]
+
+---
+
+### T-027: Extractor — Lesson Types
+
+- Source: FORMAL_SPEC.md §13.2.5 (FR-V3-004)
+- Status: NOT STARTED
+- Dependencies: T-025
+- Output:
+  - `competitor_spy_adapters/src/extractors/lesson_types.rs` — pure function `extract_lesson_types(html: &str) -> Option<Vec<String>>`
+  - Unit tests: nav with vocabulary tokens → correct deduplicated vec; no vocabulary → None; duplicates suppressed; case-insensitive match
+- Evidence: `cargo test -p competitor_spy_adapters -- extractors::lesson_types` — all pass
+- Chronicle: [C]
+
+---
+
+### T-028: Extractor — Schedule
+
+- Source: FORMAL_SPEC.md §13.2.6 (FR-V3-005)
+- Status: NOT STARTED
+- Dependencies: T-025
+- Output:
+  - `competitor_spy_adapters/src/extractors/schedule.rs` — pure function `extract_schedule(html: &str) -> Option<String>`
+  - Test fixture: `tests/fixtures/enrichment/fixture_schedule_table_de.html`
+  - Unit tests: German day-header table → Some(text); `.stundenplan` div → Some(text); time pattern + day combination → Some(text); no schedule → None
+- Evidence: `cargo test -p competitor_spy_adapters -- extractors::schedule` — all pass
+- Chronicle: [C]
+
+---
+
+### T-029: Extractor — Testimonials
+
+- Source: FORMAL_SPEC.md §13.2.7 (FR-V3-006)
+- Status: NOT STARTED
+- Dependencies: T-025
+- Output:
+  - `competitor_spy_adapters/src/extractors/testimonials.rs` — pure function `extract_testimonials(html: &str) -> Option<Vec<String>>`
+  - Test fixture: `tests/fixtures/enrichment/fixture_testimonials_blockquote.html`
+  - Unit tests: `<blockquote>` elements → vec; `.testimonial` class → vec; `„...„` quoted paragraph → vec; > 10 items → capped at 10; all empty → None; items > 500 chars → truncated
+- Evidence: `cargo test -p competitor_spy_adapters -- extractors::testimonials` — all pass
+- Chronicle: [C]
+
+---
+
+### T-030: Extractor — Class Descriptions
+
+- Source: FORMAL_SPEC.md §13.2.8 (FR-V3-007)
+- Status: NOT STARTED
+- Dependencies: T-025, T-027 (shares lesson-type vocabulary)
+- Output:
+  - `competitor_spy_adapters/src/extractors/class_descriptions.rs` — pure function `extract_class_descriptions(html: &str) -> Option<Vec<String>>`
+  - Unit tests: heading with vocabulary + sibling `<p>` → vec; `.kurs` section with `<p>` children → vec; deep heading + para → vec; no qualifying context → None; items > 800 chars → truncated; > 8 items → capped at 8
+- Evidence: `cargo test -p competitor_spy_adapters -- extractors::class_descriptions` — all pass
+- Chronicle: [C]
+
+---
+
+### T-031: WebEnricher adapter — fetch, pace, orchestrate extractors
+
+- Source: FORMAL_SPEC.md §13.2.3 (FR-V3-002), §13.3.1 (failure handling), §13.3.2 (pacing), §13.4.3 (audit log)
+- Status: NOT STARTED
+- Dependencies: T-025, T-026, T-027, T-028, T-029, T-030
+- Output:
+  - `competitor_spy_adapters/src/web_enricher.rs` — `WebEnricher` struct with method `enrich(competitors: &[Competitor], pacing: &PacingPolicy) -> Vec<WebEnrichment>`
+  - Fetches root page per competitor URL (reqwest GET, 15s timeout, up to 3 redirects, User-Agent header)
+  - Calls all 5 extractors on successful fetch; records per-field results
+  - On fetch failure: records `FetchStatus::Failed(reason_code)`; all fields None
+  - Applies pacing delay after each fetch (including NoUrl competitors: no delay)
+  - Emits audit log events: `enrichment_start`, `enrichment_fetch_attempt`, `enrichment_fetch_result`, `enrichment_complete`
+  - `Cargo.toml` dependency addition: `scraper = "0.22"` (or current stable) to `competitor_spy_adapters`
+  - Integration tests: mock HTTP server (wiremock) returning pricing fixture → correct WebEnrichment; 404 → Failed; timeout → Failed; NoUrl competitor → no HTTP request, Failed(NoUrl)
+  - Deterministic pacing test: with `CSPY_PACING_SEED`, delay sequence reproducible
+- Evidence: `cargo test -p competitor_spy_adapters -- web_enricher` — all integration tests pass
+- Chronicle: [C]
+
+---
+
+### T-032: Run lifecycle extension — Enriching state
+
+- Source: FORMAL_SPEC.md §13.2.1 (run lifecycle extension)
+- Status: NOT STARTED
+- Dependencies: T-031
+- Output:
+  - `competitor_spy_domain/src/run.rs` — `RunStatus` gains `Enriching` variant; transition logic: `Collecting -> Enriching -> Ranking`
+  - `domain::run::execute()` calls `WebEnricher::enrich()` after collection completes, before ranking
+  - Unit tests: run with mock enricher; assert `enrichments` populated; assert `enrichment_coverage` computed; assert ranking still runs after enrichment
+- Evidence: `cargo test -p competitor_spy_domain -- run` — all pass including enrichment lifecycle tests
+- Chronicle: [C]
+
+---
+
+### T-033: CLI — `--no-enrichment`, `--allow-insecure-tls`, `--enrichment-timeout` flags
+
+- Source: FORMAL_SPEC.md §13.4.1
+- Status: NOT STARTED
+- Dependencies: T-032
+- Output:
+  - `competitor_spy_cli/src/main.rs` — three new optional flags parsed and passed to run configuration
+  - `--no-enrichment`: skips Enriching state entirely; `SearchRun.enrichments = []`
+  - `--enrichment-timeout <secs>`: validates range [5, 60]; default 15
+  - `--allow-insecure-tls`: passes flag through to `WebEnricher`
+  - Unit tests: flag parsing with valid and out-of-range timeout values
+- Evidence: `cargo test -p competitor_spy_cli` — all existing + new CLI tests pass; `competitor-spy --help` shows all three flags
+- Chronicle: [C]
+
+---
+
+### T-034: Terminal renderer — Website Enrichment section
+
+- Source: FORMAL_SPEC.md §13.4.2 (report contract — terminal format)
+- Status: NOT STARTED
+- Dependencies: T-025, T-014 (existing terminal renderer)
+- Output:
+  - `competitor_spy_output/src/terminal.rs` (extended) — renders `Website Enrichment` section per competitor after the existing competitor table
+  - Format: titled block per studio; each field on its own line; `[unavailable]` for None; testimonials and class_descriptions as numbered indented list
+  - Footer: coverage line; below-threshold warning if `enrichment_coverage < 0.60`
+  - Snapshot test: fixed `SearchRun` with known enrichment data → output matches expected string; verify `[unavailable]` appears for None fields
+- Evidence: `cargo test -p competitor_spy_output -- terminal` — all pass including enrichment snapshot
+- Chronicle: [C]
+
+---
+
+### T-035: PDF renderer — Website Enrichment subsections
+
+- Source: FORMAL_SPEC.md §13.4.2 (report contract — PDF format)
+- Status: NOT STARTED
+- Dependencies: T-025, T-015 (existing PDF renderer)
+- Output:
+  - `competitor_spy_output/src/pdf.rs` (extended) — new subsection per studio for enrichment data
+  - Nil fields rendered in italic as `[unavailable]`; testimonials and class_descriptions as numbered paragraphs
+  - Footer additions: coverage line; below-threshold warning if applicable
+  - Test: PDF file produced, non-zero bytes, passes PDF parse check; coverage warning text appears in byte content when threshold not met
+- Evidence: `cargo test -p competitor_spy_output -- pdf` — all pass including enrichment PDF test
+- Chronicle: [C]
+
+---
+
+### T-036: Acceptance and live E2E tests (V3)
+
+- Source: FORMAL_SPEC.md §13.6.3 (AS-V3-001, AS-V3-002, AS-V3-003)
+- Status: NOT STARTED
+- Dependencies: T-025 through T-035
+- Output:
+  - `competitor_spy_cli/tests/acceptance.rs` — AS-V3-001 (mock run: enrichment section present; ≥1 non-nil field)
+  - `competitor_spy_cli/tests/acceptance.rs` — AS-V3-002 (mock run: 200 OK but no extractable content; all `[unavailable]`; exit 0)
+  - `competitor_spy_cli/tests/acceptance.rs` — AS-V3-003 (mock run: all URLs return 503; coverage 0%; below-threshold warning in output; exit 0)
+  - Live E2E: rebuild release binary from current HEAD; verify binary timestamp post-dates last commit; run `competitor-spy --industry pilates --location "Neulengbach, Austria" --radius 50`; confirm terminal shows enrichment section for ≥1 studio; PDF produced and non-empty; session log captured via `scripts/capture_session.ps1 v3-e2e`
+- Evidence: `cargo test` — all tests (200+ existing + new V3 acceptance) pass; live E2E session log at `docs/evidence/sessions/session_<timestamp>_v3-e2e.log`; PDF artifact at `reports/`
+- Chronicle: [C]
+
+---
+
+## V3 Stage 3 Approval
+
+- Approved by: Team Lead Agent (delegated by Lefty 2026-03-24)
+- Approval date: 2026-03-24
+- Notes: Twelve tasks T-025 through T-036 cover domain extension (T-025), five pure extractors (T-026–T-030), web enricher adapter (T-031), lifecycle extension (T-032), CLI flags (T-033), two renderer extensions (T-034–T-035), and acceptance + live E2E (T-036). TDD discipline applies throughout. No implementation code before the corresponding failing test. V1/V2 behavior preserved throughout; `--no-enrichment` flag restores pre-V3 output contract.
+

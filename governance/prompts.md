@@ -521,3 +521,51 @@ track A in V2, track B in V3
 ### Prompt 014
 approved
 [V2 brief approved. Stage 1 closed. Proceeding to Stage 2: V2 formal spec addendum and task list.]
+
+## 2026-03-24
+
+### Prompt 001
+V2 is complete, so we are moving into V3, please mark the documents as such
+
+### Prompt 002
+V3, new discovery but I'd like you to take initiative. Competitor Spy helps me identify competitors in a geographic area and scout them. Check public APIs and suggest free API options to extend local business intelligence.
+
+### Prompt 003
+enriching competitor info
+
+### Prompt 004
+yelp is paid now, so forget it. If these are all we can gather, I'd like to pivot completely.
+
+### Prompt 005
+I'd prefer to scrape website content. We are interested in pilates studios for now, and want prices, content type, lesson types, site structure, and related useful details.
+
+### Prompt 006
+we build on the results in V2 which have the list of studios we want to scrape
+
+### Prompt 007
+must-have fields if available: pricing models, lesson types, schedules, testimonials, class descriptions and difficulty. Instructor/contact/location are already in V2.
+
+### Prompt 008
+26ish
+
+### Prompt 009
+I have no expectation. Check the latest report and I would like everything in Rust if possible.
+
+### Prompt 010
+added it to our report folder - can you check it
+
+### Prompt 011
+the pdf file is the last report we ran - use the URLs in there to decide whether sites are static HTML or JS-heavy
+
+### Prompt 012
+keep distance as the only ordering factor; keep slow actions to reduce ban risk and look like human browsing; run tests for pilates, neulengbach, Austria, 50 km
+
+### Prompt 013
+yes
+
+### Prompt 014
+I am hereby approving the brief. And I am also delegating all decision making powers to the Team Lead agent. He is making all decisions and approvals in accordance with the governance structure. He keeps up that all the participating agents follow the expected protocols at all times.
+
+### Prompt 015
+[Session resumed after token-budget summarization. Team Lead auto-continuing Stage 4 build from T-032 onward.]
+

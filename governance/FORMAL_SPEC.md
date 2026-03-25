@@ -548,6 +548,377 @@ pub trait ScoringStrategy: Send + Sync {
 
 ---
 
+## 13. V3 Enrichment Specification (Addendum)
+
+### 13.0 Addendum Metadata
+
+- Spec ID: CSPY-SPEC-003 (V3 addendum to CSPY-SPEC-001)
+- Version: 1.0
+- Approval authority: Team Lead Agent (delegated by Lefty 2026-03-24; PROJECT_BRIEF.md §8 + §9)
+- Status: APPROVED — 2026-03-24
+- Source brief: `PROJECT_BRIEF.md` V3 section (approved 2026-03-24)
+- Scope: Website enrichment pipeline appended to the V2 collection stage. Does not alter V1/V2 behavior; additive only.
+
+---
+
+### 13.1 V3 Domain Extensions
+
+#### New Ubiquitous Language Terms
+
+| Term | Definition |
+|---|---|
+| Enrichment Run | The post-collection phase where each Competitor's website is fetched and parsed for additional fields. |
+| WebEnrichment | The set of website-derived enrichment fields for one Competitor. May be fully absent if the site is unreachable or yields no parseable fields. |
+| Enrichment Field | One extracted value within a WebEnrichment (e.g. pricing, lesson types). Individually present or absent. |
+| Extraction Attempt | One parse operation targeting one Enrichment Field on one fetched HTML document. |
+| Enrichment Coverage | The fraction of Competitors in a run for which at least one Enrichment Field was successfully extracted. |
+| Nil Marker | The literal string `[unavailable]` displayed in reports when an Enrichment Field could not be extracted. |
+
+#### New Entity: `WebEnrichment`
+
+```rust
+pub struct WebEnrichment {
+    pub competitor_id: Uuid,             // links to Competitor entity
+    pub fetch_status: FetchStatus,       // Success | Failed(reason_code)
+    pub fetched_at: Option<UtcDateTime>,
+    pub pricing: Option<String>,         // extracted pricing text (cleaned, trimmed)
+    pub lesson_types: Option<Vec<String>>, // e.g. ["Reformer", "Mat", "Fusion"]
+    pub schedule: Option<String>,        // full timetable text or structured summary
+    pub testimonials: Option<Vec<String>>, // list of individual testimonial passages
+    pub class_descriptions: Option<Vec<String>>, // list of class/course description passages
+}
+
+pub enum FetchStatus {
+    Success,
+    Failed(EnrichmentErrorCode),
+}
+
+pub enum EnrichmentErrorCode {
+    HttpError(u16),   // HTTP status code returned
+    Timeout,
+    DnsFailure,
+    ParseError,       // page fetched but HTML unparseable
+    NoUrl,            // competitor has no website URL in profile
+}
+```
+
+**Invariants:**
+- A `WebEnrichment` with `fetch_status = Failed(...)` has all enrichment fields set to `None`.
+- A `WebEnrichment` with `fetch_status = Success` may still have all enrichment fields set to `None` (site fetched but no target content found). This is valid; not an error.
+- `competitor_id` must reference an existing `Competitor` in the same `SearchRun`.
+
+#### Extended Entity: `SearchRun`
+
+Extends existing `SearchRun` with:
+```rust
+pub enrichments: Vec<WebEnrichment>,  // one entry per Competitor (including failed entries)
+pub enrichment_coverage: f64,         // fraction (0.0–1.0) of competitors with ≥1 extracted field
+```
+
+---
+
+### 13.2 V3 Functional Behavior
+
+#### 13.2.1 Run Lifecycle Extension (V3)
+
+The V3 run lifecycle extends section 4.1 by inserting an `Enriching` state after `Collecting`:
+
+```
+Collecting
+  --[all adapters complete]--> Enriching      // NEW V3 STATE
+
+Enriching
+  --[all enrichment attempts complete]--> Ranking
+  // Individual enrichment failures do NOT abort the run.
+  // They produce WebEnrichment(fetch_status=Failed) and the run proceeds.
+  // Zero successful enrichments is a valid outcome.
+
+Ranking, Rendering, Done: unchanged from section 4.1
+```
+
+#### 13.2.2 FR-V3-001: Enrichment Source Input
+
+- Preconditions: `SearchRun` has transitioned to `Enriching` state; `SearchRun.competitors` is populated (may be empty).
+- Trigger: Automatic after `Collecting` completes.
+- Expected behavior: For each `Competitor` where `BusinessProfile.website` DataPoint is non-Absent, schedule one enrichment fetch. Competitors with no website URL produce a `WebEnrichment { fetch_status: Failed(NoUrl), ... all fields None }`.
+- Postconditions: `SearchRun.enrichments` contains exactly one `WebEnrichment` per `Competitor`, in the same order.
+
+#### 13.2.3 FR-V3-002: Website Content Fetching
+
+- HTTP client: `reqwest` (blocking mode acceptable in the enrichment phase; async acceptable if already in Tokio context).
+- Request method: GET, following up to 3 redirects.
+- Request headers: `User-Agent: Mozilla/5.0 (compatible; CompetitorSpy/3.0; +https://github.com/local)` to appear as a normal browser visit.
+- Timeout: 15 seconds per fetch.
+- TLS: required; reject invalid certificates unless `--allow-insecure-tls` flag is passed (CLI flag defined in 13.4.1).
+- Pacing: after each fetch, pause for a duration drawn uniformly from [5, 15] seconds (same policy as section 4.8). See section 13.3.2 for the enrichment pacing decision table.
+- Fetches are sequential (one at a time), not concurrent, to minimise detection risk.
+- Only the root page (`/`) is fetched unless the HTTP response contains a `<link rel="sitemap">` hint pointing to a pricing or schedule sub-page; in that case, the hint URL is fetched as a second request for the same competitor (one additional pacing delay).
+- Postconditions: Raw HTML string available for parsing, or `FetchStatus::Failed(reason_code)` recorded.
+
+#### 13.2.4 FR-V3-003: Pricing Extraction
+
+- **Goal:** Extract any pricing, membership, or class-cost information visible on the page.
+- **Extraction strategy (in priority order):**
+  1. Find `<table>` elements whose headers or caption contain any of: `Preis`, `Preise`, `price`, `pricing`, `tarif`, `kosten`, `euro`, `€`. Extract all cell text from matching tables.
+  2. Find `<ul>` or `<ol>` list items containing a `€` character or a 2–4 digit number followed by `€` or `EUR`.
+  3. Find `<p>` or `<div>` elements whose text contains both a digit and `€`/`EUR`.
+  4. Find elements with CSS class or id containing `preis`, `price`, `tarif`, `cost`.
+- **Output:** Concatenated plain text, whitespace-normalised, truncated to 2 000 characters.
+- **Nil condition:** No qualifying element found → `pricing = None`.
+
+#### 13.2.5 FR-V3-004: Lesson Type Extraction
+
+- **Goal:** Identify the discipline/modality names offered at the studio.
+- **Target vocabulary (case-insensitive):** `Reformer`, `Mat`, `Matwork`, `Fusion`, `Pilates`, `Yoga`, `Barre`, `Aerial`, `Tower`, `Cadillac`, `Chair`, `Barrel`, `Clinical`, `Prenatal`, `Postnatal`, `Hot`, `Yin`, `Vinyasa`, `HIIT`, `Stretch`, `Mobility`, `Fascia`.
+- **Extraction strategy:**
+  1. Scan all navigation `<nav>` links, `<h1>` through `<h3>` text, and `<li>` list items.
+  2. Collect any token from the target vocabulary found in those elements.
+  3. Deduplicate; preserve document order.
+- **Output:** `Vec<String>` of matched vocabulary tokens.
+- **Nil condition:** No target vocabulary token found → `lesson_types = None`.
+
+#### 13.2.6 FR-V3-005: Schedule Extraction
+
+- **Goal:** Extract timetable or class schedule information if present.
+- **Extraction strategy (in priority order):**
+  1. Look for `<table>` elements whose headers contain day-of-week names (German or English: `Mo`, `Di`, `Mi`, `Do`, `Fr`, `Sa`, `So`, `Mon`, `Tue`, `Wed`, `Thu`, `Fri`, `Sat`, `Sun`). Extract full table text.
+  2. Look for `<div>` or `<section>` elements with class/id containing `stundenplan`, `timetable`, `schedule`, `kursplan`, `kurse`. Extract inner text.
+  3. Look for time-pattern matches (e.g. `\d{1,2}:\d{2}`) in combination with day-of-week tokens within the same parent element.
+- **Output:** Concatenated plain text, whitespace-normalised, truncated to 3 000 characters.
+- **Nil condition:** No qualifying element found → `schedule = None`.
+
+#### 13.2.7 FR-V3-006: Testimonial Extraction
+
+- **Goal:** Extract customer testimonials or reviews published on the studio's own site.
+- **Extraction strategy (in priority order):**
+  1. Find `<blockquote>` elements. Extract text content.
+  2. Find elements with class/id containing `testimonial`, `review`, `bewertung`, `kundenstimme`, `erfahrung`. Extract text content.
+  3. Find `<p>` elements that begin or end with a `"` or `„` quotation character and are longer than 40 characters.
+- **Output:** `Vec<String>`, each item one testimonial passage, trimmed, max 500 characters per item, max 10 items.
+- **Nil condition:** No qualifying element found → `testimonials = None`.
+
+#### 13.2.8 FR-V3-007: Class Description Extraction
+
+- **Goal:** Extract class/course descriptions indicating content, level, or target audience.
+- **Extraction strategy (in priority order):**
+  1. Find `<p>` elements that are direct siblings or children of a heading containing lesson-type vocabulary (section 13.2.5 target vocabulary). Extract those paragraph texts.
+  2. Find `<section>` or `<article>` elements with class/id containing `kurs`, `class`, `angebot`, `offer`, `leistung`. Extract `<p>` text within.
+  3. Find `<p>` elements longer than 80 characters within 3 DOM levels below any `<h2>` or `<h3>` containing lesson-type vocabulary.
+- **Output:** `Vec<String>`, each item one description passage, trimmed, max 800 characters per item, max 8 items.
+- **Nil condition:** No qualifying element found → `class_descriptions = None`.
+
+#### 13.2.9 FR-V3-008: Partial Enrichment and Nil Marking
+
+- Each Enrichment Field is extracted and evaluated independently. A failure or nil result for one field does not affect extraction of other fields.
+- A `WebEnrichment` is considered partially enriched if `fetch_status = Success` AND at least one field is `Some(...)`.
+- A `WebEnrichment` is considered fully absent if `fetch_status = Success` AND all fields are `None`. This is valid; no error is raised.
+- In all report outputs, `None` fields are rendered as the literal `[unavailable]`.
+- `Vec` fields with an empty or `None` value are rendered as `[unavailable]`.
+
+#### 13.2.10 FR-V3-009: Enrichment Coverage Threshold (U-V3-001, resolved by Team Lead)
+
+- **Coverage metric:** `enrichment_coverage = (count of competitors with ≥1 extracted field) / (total competitors)`.
+- **Passing threshold:** ≥ 60% (0.60). If fewer than 60% of studios yield any enrichment data, a warning line is appended to the report footer: `Warning: enrichment coverage below threshold (N/M studios enriched)`.
+- **Run outcome:** Coverage below threshold is a warning, never a failure. Exit code is unaffected.
+- **Decision authority:** Team Lead Agent, 2026-03-24. Revocable by Lefty.
+
+---
+
+### 13.3 V3 Decision Tables
+
+#### 13.3.1 Enrichment Fetch Failure Handling
+
+| Condition | Action |
+|---|---|
+| HTTP 4xx response | `Failed(HttpError(status))`, all fields None, audit log, run continues |
+| HTTP 5xx response | `Failed(HttpError(status))`, all fields None, audit log, run continues |
+| HTTP timeout (>15s) | `Failed(Timeout)`, all fields None, audit log, run continues |
+| DNS resolution failure | `Failed(DnsFailure)`, all fields None, audit log, run continues |
+| TLS certificate invalid | `Failed(HttpError(0))`, all fields None, audit log, run continues (unless `--allow-insecure-tls`) |
+| HTML parse failure | `Failed(ParseError)`, all fields None, audit log, run continues |
+| Competitor has no URL | `Failed(NoUrl)`, all fields None, no HTTP request made |
+| All enrichments fail | Run proceeds to Ranking; report footer notes zero enrichment coverage; exit 0 |
+
+#### 13.3.2 Enrichment Pacing Policy
+
+| Context | Behaviour |
+|---|---|
+| Normal enrichment run | Uniform[5, 15] seconds delay after each HTTP fetch |
+| Test run (`CSPY_PACING_SEED` set) | Deterministic sequence from seed; zero-delay allowed in unit tests |
+| Competitor has no URL | No delay (no request made) |
+| Second sub-page fetch (sitemap hint) | Additional pacing delay after the sub-page request |
+| Single-competitor debug run | Normal pacing applies; no exception |
+
+#### 13.3.3 Enrichment Field Nil vs Empty
+
+| Condition | Stored value | Report display |
+|---|---|---|
+| Field extracted with content | `Some(text)` / `Some(vec![...])` | content |
+| Field extraction strategy matched no elements | `None` | `[unavailable]` |
+| Fetch failed (any reason) | `None` (forced) | `[unavailable]` |
+| Vec field extracted but all items empty after trim | `None` | `[unavailable]` |
+
+---
+
+### 13.4 V3 Interface Contracts
+
+#### 13.4.1 CLI Extension
+
+V3 adds the following optional flags to the existing CLI contract (section 6.1):
+
+```
+[--no-enrichment]              # skip the enrichment phase; produce V2-equivalent report only
+[--allow-insecure-tls]        # accept self-signed or expired TLS certificates during enrichment fetches
+[--enrichment-timeout <secs>] # per-fetch timeout; default = 15; min = 5; max = 60
+```
+
+#### 13.4.2 Report Enrichment Section Contract
+
+Both terminal and PDF reports gain a new **"Website Enrichment"** section, rendered after the existing competitor table.
+
+**Terminal format (per studio):**
+
+```
+--- Website Enrichment: <Studio Name> ---
+  Pricing:             <pricing text or [unavailable]>
+  Lesson Types:        <comma-separated list or [unavailable]>
+  Schedule:            <schedule text or [unavailable]>
+  Testimonials:        <count> found  (or [unavailable])
+    [1] "..."
+    [2] "..."
+  Class Descriptions:  <count> found  (or [unavailable])
+    [1] "..."
+```
+
+**PDF format:** Same logical content as terminal. Each studio's enrichment block is a titled subsection. Testimonials and class descriptions are rendered as numbered indented paragraphs. `[unavailable]` is rendered in italic.
+
+**Footer additions:**
+- Enrichment coverage: `Enrichment: N/M studios (X%) had at least one extractable field.`
+- Below-threshold warning (if applicable): `Warning: enrichment coverage below 60% threshold.`
+
+#### 13.4.3 Audit Log Extension
+
+Additional minimum events per enrichment run (appended to section 6.3):
+
+| Event | Fields |
+|---|---|
+| `enrichment_start` | run_id, competitor_count |
+| `enrichment_fetch_attempt` | run_id, competitor_id, url_host (no path, no query) |
+| `enrichment_fetch_result` | run_id, competitor_id, fetch_status, fields_extracted_count |
+| `enrichment_complete` | run_id, coverage_fraction |
+
+URL logging rule: only the hostname is logged, never the path or query string, to avoid leaking PII or tracking tokens.
+
+---
+
+### 13.5 V3 Architecture Extension
+
+New module additions (additive; no existing module changes required for V1/V2 behavior):
+
+```
+competitor_spy_domain
++-- enrichment              -- WebEnrichment, FetchStatus, EnrichmentErrorCode, enrichment_coverage()
++-- run (extended)          -- SearchRun gains: enrichments: Vec<WebEnrichment>, enrichment_coverage: f64
+
+competitor_spy_adapters
++-- web_enricher            -- fetches HTML (reqwest), applies pacing, returns raw HTML per competitor
++-- extractors/
+    +-- pricing             -- FR-V3-003 extraction logic
+    +-- lesson_types        -- FR-V3-004 extraction logic
+    +-- schedule            -- FR-V3-005 extraction logic
+    +-- testimonials        -- FR-V3-006 extraction logic
+    +-- class_descriptions  -- FR-V3-007 extraction logic
+
+competitor_spy_output
++-- terminal (extended)     -- renders WebEnrichment section per competitor
++-- pdf (extended)          -- renders WebEnrichment subsection per competitor
+```
+
+**Key crate additions:**
+- `scraper = "0.22"` (or latest stable) — HTML parsing via CSS selectors; added to `competitor_spy_adapters` dependencies only.
+- `reqwest` — already present; no version change required.
+
+**Architecture constraint:** All extraction logic (`extractors/`) must be pure functions with no I/O. They receive a `&str` (raw HTML) and return the appropriate `Option<T>`. This makes them unit-testable without network access.
+
+---
+
+### 13.6 V3 Test Strategy
+
+#### 13.6.1 Unit Tests (Extraction)
+
+| Module | Coverage targets |
+|---|---|
+| `extractors::pricing` | HTML with pricing table → correct text; HTML without → None; malformed HTML → None |
+| `extractors::lesson_types` | Nav with mixed vocabulary → correct deduplicated vec; no vocabulary → None |
+| `extractors::schedule` | German day-header table → correct text; English timetable div → correct text; no schedule → None |
+| `extractors::testimonials` | `<blockquote>` → correct vec; `.testimonial` class → correct; > 10 items → capped at 10 |
+| `extractors::class_descriptions` | Heading + sibling `<p>` → correct vec; no qualifying context → None |
+| `WebEnrichment` | All fields None when FetchStatus::Failed; coverage metric calculation edge cases |
+
+#### 13.6.2 Integration Tests (Enrichment Pipeline)
+
+| Scope | Coverage targets |
+|---|---|
+| `web_enricher` | Mock HTTP server returns static HTML fixture → correct `WebEnrichment` produced |
+| `web_enricher` | Mock HTTP server returns 404 → `FetchStatus::Failed(HttpError(404))`; other fields None |
+| `web_enricher` | Mock HTTP server times out → `FetchStatus::Failed(Timeout)` |
+| `web_enricher` | Competitor with no URL → `FetchStatus::Failed(NoUrl)`; no HTTP request made |
+| Pacing | With `CSPY_PACING_SEED` set, enrichment delay sequence is deterministic and logged |
+
+#### 13.6.3 Acceptance Tests (V3)
+
+| ID | Scenario | Pass Condition |
+|---|---|---|
+| AS-V3-001 | Live run: `--industry "pilates" --location "Neulengbach, Austria" --radius 50` | Both reports produced; enrichment section present; ≥1 studio has ≥1 non-nil field; exit 0 |
+| AS-V3-002 | Mock run: one competitor URL returns 200 but HTML has no extractable fields | `WebEnrichment.fetch_status = Success`; all fields None; report shows `[unavailable]` for all fields; run completes; exit 0 |
+| AS-V3-003 | Mock run: all competitor URLs return HTTP 503 | All `WebEnrichment.fetch_status = Failed`; coverage = 0%; below-threshold warning in report footer; exit 0 |
+
+#### 13.6.4 HTML Test Fixtures
+
+Real-world HTML fixture files (anonymised) are stored under `tests/fixtures/enrichment/`. At minimum:
+- `fixture_pricing_table_de.html` — German-language pricing table
+- `fixture_schedule_table_de.html` — German-language timetable
+- `fixture_testimonials_blockquote.html` — blockquote-based testimonials
+- `fixture_no_content.html` — minimal valid HTML with no extractable enrichment content
+
+---
+
+### 13.7 V3 Traceability Extension
+
+| Requirement | Spec section | Planned tests | Chronicle entry |
+|---|---|---|---|
+| FR-V3-001 (input from V2 list) | 13.2.2 | AS-V3-001 | enrichment module |
+| FR-V3-002 (HTTP fetch) | 13.2.3 | web_enricher integration | web_enricher module |
+| FR-V3-003 (pricing) | 13.2.4 | extractors::pricing unit | pricing extractor |
+| FR-V3-004 (lesson types) | 13.2.5 | extractors::lesson_types unit | lesson_types extractor |
+| FR-V3-005 (schedule) | 13.2.6 | extractors::schedule unit | schedule extractor |
+| FR-V3-006 (testimonials) | 13.2.7 | extractors::testimonials unit | testimonials extractor |
+| FR-V3-007 (class descriptions) | 13.2.8 | extractors::class_descriptions unit | class_descriptions extractor |
+| FR-V3-008 (partial enrichment + nil marking) | 13.2.9 | AS-V3-002; extractor nil tests | enrichment module |
+| FR-V3-009 (coverage threshold, U-V3-001) | 13.2.10 | AS-V3-003; coverage calculation unit | enrichment module |
+| NFR: pacing (enrichment) | 13.3.2 | pacing integration with CSPY_PACING_SEED | web_enricher module |
+| NFR: audit log (enrichment) | 13.4.3 | telemetry event coverage | telemetry enrichment events |
+| NFR: architecture extension | 13.5 | crate dep graph unchanged for existing crates | ADR for scraper crate adoption |
+
+---
+
+### 13.8 V3 Open Items
+
+- **U-V3-001 — Coverage threshold (RESOLVED 2026-03-24, Team Lead):** ≥60% studios must yield ≥1 enrichment field for a passing run. Below threshold = warning only; exit code unaffected.
+- **U-V3-002 — Language handling:** Austrian studio sites are predominantly German. Extraction strategies in sections 13.2.4–13.2.8 include German keyword variants (`Preis`, `Preise`, `Stundenplan`, `Kursplan`, `Kundenstimme`, etc.). Multi-language pages are handled implicitly by the same strategies. No translation or NLP required.
+- **U-V3-003 — Sub-page depth:** V3 fetches root page only (+ one optional sub-page via sitemap hint). Deep crawling is out of scope unless a follow-on ADR approves it.
+- **U-V3-004 — JavaScript-rendered content:** V3 assumes static/server-rendered HTML. Sites requiring JS execution will yield partial or nil enrichment; this is expected and acceptable per FR-V3-008. Headless browser support deferred to post-V3.
+
+---
+
+## 14. V3 Stage 2 Approval
+
+- Approved by: Team Lead Agent (delegated by Lefty 2026-03-24; PROJECT_BRIEF.md §8 + §9)
+- Approval date: 2026-03-24
+- Notes: All V3 open items resolved or formally deferred. Spec frozen for Stage 3 task planning. V1/V2 sections unchanged. Breaking changes to enrichment domain model require a new U-V3-xxx entry and Team Lead sign-off before Stage 4 implementation.
+
+---
+
 # V2 Specification Addendum — Competitor Spy v2.0
 
 ## V2.1 Addendum Metadata

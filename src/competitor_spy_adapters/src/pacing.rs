@@ -52,6 +52,15 @@ impl PacingPolicy {
             tokio::time::sleep(delay).await;
         }
     }
+
+    /// Blocking variant of `pace` for use in synchronous enrichment context.
+    /// Sleeps on the current thread unless zero_delay is set.
+    pub fn wait(&self) {
+        let delay = self.next_delay();
+        if !self.zero_delay {
+            std::thread::sleep(delay);
+        }
+    }
 }
 
 impl Default for PacingPolicy {

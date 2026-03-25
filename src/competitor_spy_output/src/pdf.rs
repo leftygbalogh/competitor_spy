@@ -7,6 +7,7 @@ use std::path::Path;
 
 use printpdf::*;
 
+use competitor_spy_domain::enrichment::COVERAGE_THRESHOLD;
 use competitor_spy_domain::run::{AdapterResultStatus, SearchRun};
 
 // ── A4 dimensions ─────────────────────────────────────────────────────────────
@@ -18,6 +19,10 @@ const BOTTOM_MARGIN_MM: f32 = 15.0;
 const LEFT_MARGIN_MM:  f32 = 10.0;
 const FONT_SIZE:       f32 = 10.0;
 const LINE_HEIGHT:     f32 = 5.5;
+/// Approx chars fitting on one line: (210-10-10)mm / (10pt * 25.4/72 * 0.55 mm/char) ≈ 97 → 125 safe.
+const MAX_CHARS_PER_LINE: usize = 125;
+/// Continuation indent that aligns text after a `label_line()` prefix (17 chars: 15+": ").
+const LABEL_INDENT: &str = "                 ";
 
 // ── Pagination macro ─────────────────────────────────────────────────────────
 
@@ -104,6 +109,50 @@ fn label_line(label: &str, value: &str) -> String {
     format!("{:<15}: {}", label, value)
 }
 
+/// Word-wrap `text` at word boundaries so each line is at most `max_chars` long.
+/// Lines after the first are prefixed with `continuation_indent`.
+fn word_wrap(text: &str, max_chars: usize, continuation_indent: &str) -> Vec<String> {
+    let cont_len = continuation_indent.len();
+    let mut lines: Vec<String> = Vec::new();
+    let mut current = String::new();
+    let mut is_first = true;
+
+    for word in text.split_whitespace() {
+        let budget = if is_first {
+            max_chars
+        } else {
+            max_chars.saturating_sub(cont_len)
+        };
+        let new_len = if current.is_empty() {
+            word.len()
+        } else {
+            current.len() + 1 + word.len()
+        };
+        if !current.is_empty() && new_len > budget {
+            lines.push(if is_first {
+                current.clone()
+            } else {
+                format!("{}{}", continuation_indent, &current)
+            });
+            current = word.to_string();
+            is_first = false;
+        } else {
+            if !current.is_empty() {
+                current.push(' ');
+            }
+            current.push_str(word);
+        }
+    }
+    if !current.is_empty() || lines.is_empty() {
+        lines.push(if is_first {
+            current
+        } else {
+            format!("{}{}", continuation_indent, &current)
+        });
+    }
+    lines
+}
+
 /// Draw a horizontal rule at `y` to represent the card separator.
 fn draw_sep(layer: &PdfLayerReference, y: f32) {
     layer.add_line(Line {
@@ -121,7 +170,7 @@ fn url_offset(char_count: usize, font_size: f32) -> f32 {
 }
 
 /// Estimate renderable line count for a competitor card (used for space check).
-fn count_present_fields(c: &competitor_spy_domain::profile::Competitor, detail: bool) -> usize {
+fn count_present_fields(c: &competitor_spy_domain::profile::Competitor, detail: bool, enrichment: Option<&competitor_spy_domain::enrichment::WebEnrichment>) -> usize {
     let mut n = 0;
     if c.profile.address.value.is_some()          { n += 1; }
     if c.profile.phone.value.is_some()             { n += 1; }
@@ -131,6 +180,15 @@ fn count_present_fields(c: &competitor_spy_domain::profile::Competitor, detail: 
     if c.profile.price_level.value.is_some()       { n += 1; }
     if c.profile.editorial_summary.value.is_some() { n += 1; }
     if detail { n += c.profile.reviews.len(); }
+    if let Some(e) = enrichment {
+        if e.fetch_status.is_success() {
+            if e.pricing.is_some()           { n += 1; }
+            if e.lesson_types.is_some()      { n += 1; }
+            if e.schedule.is_some()          { n += 1; }
+            if let Some(items) = &e.testimonials     { n += 1; if detail { n += items.len(); } }
+            if let Some(items) = &e.class_descriptions { n += 1; if detail { n += items.len(); } }
+        }
+    }
     n
 }
 
@@ -190,7 +248,8 @@ fn build_document(run: &SearchRun, detail: bool) -> PdfDocumentReference {
         draw_sep(&layer, y);
     } else {
         for c in &run.competitors {
-            let field_count = count_present_fields(c, detail);
+            let enrich = run.enrichments.iter().find(|e| e.competitor_id == c.id);
+            let field_count = count_present_fields(c, detail, enrich);
             let card_height = (3 + field_count) as f32 * LINE_HEIGHT;
             ensure_space!(card_height.max(20.0), y, layer, doc, font, font_bold);
 
@@ -218,14 +277,18 @@ fn build_document(run: &SearchRun, detail: bool) -> PdfDocumentReference {
 
             // Fields — silent omission when absent
             if let Some(v) = &c.profile.address.value {
-                ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
-                y -= LINE_HEIGHT;
-                layer.use_text(&label_line("Address", v), FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                for line in word_wrap(&label_line("Address", v), MAX_CHARS_PER_LINE, LABEL_INDENT) {
+                    ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                    y -= LINE_HEIGHT;
+                    layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                }
             }
             if let Some(v) = &c.profile.phone.value {
-                ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
-                y -= LINE_HEIGHT;
-                layer.use_text(&label_line("Phone", v), FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                for line in word_wrap(&label_line("Phone", v), MAX_CHARS_PER_LINE, LABEL_INDENT) {
+                    ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                    y -= LINE_HEIGHT;
+                    layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                }
             }
             if let Some(v) = &c.profile.website.value {
                 ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
@@ -238,45 +301,112 @@ fn build_document(run: &SearchRun, detail: bool) -> PdfDocumentReference {
                 layer.set_fill_color(Color::Rgb(Rgb { r: 0.0, g: 0.0, b: 0.0, icc_profile: None }));
             }
             if let Some(v) = &c.profile.categories.value {
-                ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
-                y -= LINE_HEIGHT;
-                layer.use_text(&label_line("Categories", v), FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                for line in word_wrap(&label_line("Categories", v), MAX_CHARS_PER_LINE, LABEL_INDENT) {
+                    ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                    y -= LINE_HEIGHT;
+                    layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                }
             }
             if let Some(v) = &c.profile.opening_hours.value {
-                let oh_lines: Vec<&str> = v.split('\n').collect();
-                ensure_space!(oh_lines.len() as f32 * LINE_HEIGHT, y, layer, doc, font, font_bold);
-                for (i, line) in oh_lines.iter().enumerate() {
-                    y -= LINE_HEIGHT;
+                for (i, oh_line) in v.split('\n').enumerate() {
                     let text = if i == 0 {
-                        label_line("Opening Hours", line)
+                        label_line("Opening Hours", oh_line)
                     } else {
-                        format!("                 {line}")
+                        format!("{LABEL_INDENT}{oh_line}")
                     };
-                    layer.use_text(&text, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                    for wrapped in word_wrap(&text, MAX_CHARS_PER_LINE, LABEL_INDENT) {
+                        ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                        y -= LINE_HEIGHT;
+                        layer.use_text(&wrapped, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                    }
                 }
             }
             if let Some(v) = &c.profile.price_level.value {
-                ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
-                y -= LINE_HEIGHT;
-                layer.use_text(&label_line("Price Level", v), FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                for line in word_wrap(&label_line("Price Level", v), MAX_CHARS_PER_LINE, LABEL_INDENT) {
+                    ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                    y -= LINE_HEIGHT;
+                    layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                }
             }
             if let Some(v) = &c.profile.editorial_summary.value {
-                ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
-                y -= LINE_HEIGHT;
-                layer.use_text(&label_line("Editorial", v), FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                for line in word_wrap(&label_line("Editorial", v), MAX_CHARS_PER_LINE, LABEL_INDENT) {
+                    ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                    y -= LINE_HEIGHT;
+                    layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                }
             }
             if detail {
                 for (i, review) in c.profile.reviews.iter().enumerate() {
-                    ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
-                    y -= LINE_HEIGHT;
-                    let text = format!(
-                        "Review {} ({}\u{2605}, {}): {}",
+                    let header = format!(
+                        "Review {} ({}\u{2605}, {}): ",
                         i + 1,
                         review.rating,
                         review.relative_time,
-                        review.text,
                     );
-                    layer.use_text(&text, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                    let review_indent = " ".repeat(header.len().min(MAX_CHARS_PER_LINE));
+                    let full_text = format!("{}{}", header, review.text);
+                    for line in word_wrap(&full_text, MAX_CHARS_PER_LINE, &review_indent) {
+                        ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                        y -= LINE_HEIGHT;
+                        layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                    }
+                }
+            }
+            // ── V3 website enrichment fields ──────────────────────────────────
+            if let Some(e) = enrich {
+                if e.fetch_status.is_success() {
+                    if let Some(v) = &e.pricing {
+                        for line in word_wrap(&label_line("Pricing", v), MAX_CHARS_PER_LINE, LABEL_INDENT) {
+                            ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                            y -= LINE_HEIGHT;
+                            layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                        }
+                    }
+                    if let Some(types) = &e.lesson_types {
+                        for line in word_wrap(&label_line("Lesson Types", &types.join(", ")), MAX_CHARS_PER_LINE, LABEL_INDENT) {
+                            ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                            y -= LINE_HEIGHT;
+                            layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                        }
+                    }
+                    if let Some(v) = &e.schedule {
+                        for line in word_wrap(&label_line("Schedule", v), MAX_CHARS_PER_LINE, LABEL_INDENT) {
+                            ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                            y -= LINE_HEIGHT;
+                            layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                        }
+                    }
+                    if let Some(items) = &e.testimonials {
+                        ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                        y -= LINE_HEIGHT;
+                        layer.use_text(&label_line("Testimonials", &format!("{} found", items.len())), FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                        if detail {
+                            for t in items {
+                                let content = format!("\"{}\"", t);
+                                for (idx, wline) in word_wrap(&content, MAX_CHARS_PER_LINE - 2, "").into_iter().enumerate() {
+                                    let line = if idx == 0 { format!("  {}", wline) } else { format!("   {}", wline) };
+                                    ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                                    y -= LINE_HEIGHT;
+                                    layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                                }
+                            }
+                        }
+                    }
+                    if let Some(items) = &e.class_descriptions {
+                        ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                        y -= LINE_HEIGHT;
+                        layer.use_text(&label_line("Class Descs", &format!("{} found", items.len())), FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                        if detail {
+                            for d in items {
+                                for (idx, wline) in word_wrap(d, MAX_CHARS_PER_LINE - 2, "").into_iter().enumerate() {
+                                    let line = if idx == 0 { format!("  {}", wline) } else { format!("   {}", wline) };
+                                    ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+                                    y -= LINE_HEIGHT;
+                                    layer.use_text(&line, FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -310,6 +440,30 @@ fn build_document(run: &SearchRun, detail: bool) -> PdfDocumentReference {
             );
         }
     }
+
+    // ── Footer: V3 enrichment coverage ───────────────────────────────────────
+    if !run.enrichments.is_empty() {
+        ensure_space!(2.0 * LINE_HEIGHT, y, layer, doc, font, font_bold);
+        y -= LINE_HEIGHT;
+        let n = run.enrichments.len();
+        let with_data = (run.enrichment_coverage * n as f64).round() as usize;
+        layer.use_text(
+            &format!(
+                "Enrichment: {with_data}/{n} studios ({:.0}%) had at least one extractable field.",
+                run.enrichment_coverage * 100.0,
+            ),
+            FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font,
+        );
+        if run.enrichment_coverage < COVERAGE_THRESHOLD {
+            ensure_space!(LINE_HEIGHT, y, layer, doc, font, font_bold);
+            y -= LINE_HEIGHT;
+            layer.use_text(
+                "  Warning: enrichment coverage is below the 60% threshold.",
+                FONT_SIZE, Mm(LEFT_MARGIN_MM), Mm(y), &font,
+            );
+        }
+    }
+    let _ = y; // suppress unused warning
 
     doc
 }
@@ -531,5 +685,78 @@ mod tests {
             "20-competitor PDF must exceed 5000 bytes, got {}",
             bytes.len()
         );
+    }
+
+    /// Visual wrap test — run with:
+    ///   cargo test -p competitor_spy_output -- wrap_visual_test --ignored --nocapture
+    /// Then open reports/wrap_visual_test.pdf to verify wrapping.
+    #[test]
+    #[ignore]
+    fn wrap_visual_test() {
+        let query =
+            SearchQuery::new("Pilates", "Vienna, Austria", Radius::Km25).unwrap();
+        let ts = chrono::Utc.with_ymd_and_hms(2026, 3, 25, 10, 0, 0).unwrap();
+        let mut run = SearchRun::new(query, ts);
+        run.start_validating();
+        run.start_geocoding();
+        run.set_location(Location::new(48.2082, 16.3738).unwrap());
+        run.start_ranking();
+
+        let long_review = "I've been taking weekly private Pilates sessions since 2019, \
+            and for the last three years as a targeted complement to my physiotherapy. \
+            Dora possesses extensive knowledge of both the Pilates method and the human body \
+            in general. She is an excellent instructor who tailors each session to individual \
+            needs. I highly recommend her studio to anyone looking for professional Pilates \
+            instruction in a welcoming environment.";
+
+        let long_categories = "yoga_studio, sports_complex, gym, sports_school, health, \
+            sports_activity_location, fitness_center, point_of_interest, establishment";
+
+        let mut profile = BusinessProfile::empty();
+        profile.name = DataPoint::present("name", "Wrap Test Studio", "test", Confidence::High);
+        profile.address = DataPoint::present("address", "Habsburgergasse 1a, 1010 Wien, Austria", "test", Confidence::High);
+        profile.phone = DataPoint::present("phone", "+43 1 5322200", "test", Confidence::High);
+        profile.categories = DataPoint::present("categories", long_categories, "test", Confidence::High);
+        profile.reviews = vec![
+            PlaceReview {
+                text: long_review.into(),
+                rating: 5,
+                relative_time: "8 months ago".into(),
+            },
+            PlaceReview {
+                text: "Great studio! Very professional and dedicated trainers. \
+                    State-of-the-art equipment. I highly recommend it to everyone looking \
+                    for a quality Pilates experience in Vienna.".into(),
+                rating: 5,
+                relative_time: "10 months ago".into(),
+            },
+        ];
+        profile.editorial_summary = DataPoint::present(
+            "editorial_summary",
+            "A boutique Pilates studio offering private and group sessions in the heart of Vienna, \
+             specialising in classical Pilates and physiotherapy-complementary movement.",
+            "test",
+            Confidence::High,
+        );
+        let c = Competitor {
+            id: Uuid::new_v4(),
+            profile,
+            location: Location::new(48.2082, 16.3738).unwrap(),
+            distance_km: 0.3,
+            keyword_score: 0.90,
+            visibility_score: 0.85,
+            rank: 1,
+        };
+        run.set_competitors(vec![c]);
+        run.complete(ts);
+
+        let out_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent().unwrap().parent().unwrap()
+            .join("reports");
+        std::fs::create_dir_all(&out_dir).unwrap();
+        let path = out_dir.join("wrap_visual_test.pdf");
+        let file = std::fs::File::create(&path).unwrap();
+        render_to_writer(&run, true, std::io::BufWriter::new(file)).expect("render failed");
+        println!("PDF written to: {}", path.display());
     }
 }

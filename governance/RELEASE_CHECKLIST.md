@@ -6,6 +6,7 @@ Spec: CSPY-SPEC-001 v1.0. Project mode: Greenfield. Implementation: Rust workspa
 ## Stage 5 Verify Results
 
 - [x] All 198 tests pass (193 unit + 5 acceptance): `cargo test --workspace`
+- [ ] `cargo audit` — no unfixed advisories: `cargo audit` (install: `cargo install cargo-audit`)
 - [x] Acceptance tests AS-001 through AS-005 validate all exit-code branches and output contracts
 - [x] Traceability matrix complete: `docs/evidence/traceability.md` — 0 untraced requirements
 - [x] Environment validation matrix complete: `docs/evidence/environment-matrix.md` — Windows 11 PASS; Linux risk documented

@@ -1,10 +1,12 @@
 // SearchRun, RunStatus, SourceResult, RawRecord, ReasonCode — T-003
+// V3: Enriching state, enrichments field — T-025/T-032
 // TDD: tests written first; state-machine transitions tested explicitly.
 
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 use crate::query::{Location, SearchQuery};
 use crate::profile::Competitor;
+use crate::enrichment::{WebEnrichment, enrichment_coverage};
 
 // ── ReasonCode ────────────────────────────────────────────────────────────────
 
@@ -92,6 +94,8 @@ pub enum RunStatus {
     Validating,
     Geocoding,
     Collecting,
+    /// V3: website enrichment phase; runs after Collecting, before Ranking.
+    Enriching,
     Ranking,
     Rendering,
     Done,
@@ -111,6 +115,10 @@ pub struct SearchRun {
     pub started_at: DateTime<Utc>,
     pub completed_at: Option<DateTime<Utc>>,
     pub status: RunStatus,
+    /// V3: one WebEnrichment per competitor (including failed ones).  Empty when enrichment is skipped.
+    pub enrichments: Vec<WebEnrichment>,
+    /// V3: fraction [0.0, 1.0] of competitors with ≥1 extracted enrichment field.
+    pub enrichment_coverage: f64,
 }
 
 impl SearchRun {
@@ -125,6 +133,8 @@ impl SearchRun {
             started_at,
             completed_at: None,
             status: RunStatus::Idle,
+            enrichments: Vec::new(),
+            enrichment_coverage: 0.0,
         }
     }
 
@@ -153,9 +163,28 @@ impl SearchRun {
         self.source_results.push(result);
     }
 
-    /// Collecting → Ranking.
-    pub fn start_ranking(&mut self) {
+    /// Collecting → Enriching (V3 path).  Call this before website enrichment phase.
+    pub fn start_enriching(&mut self) {
         debug_assert_eq!(self.status, RunStatus::Collecting);
+        self.status = RunStatus::Enriching;
+    }
+
+    /// Store enrichment results (V3).  Computes and stores coverage fraction.
+    /// Must be called in Enriching state.
+    pub fn set_enrichments(&mut self, enrichments: Vec<WebEnrichment>) {
+        debug_assert_eq!(self.status, RunStatus::Enriching);
+        self.enrichment_coverage = enrichment_coverage(&enrichments);
+        self.enrichments = enrichments;
+    }
+
+    /// Transition to Ranking.  Accepts both Collecting (V2/--no-enrichment path)
+    /// and Enriching (V3 path) as predecessor states.
+    pub fn start_ranking(&mut self) {
+        debug_assert!(
+            self.status == RunStatus::Collecting || self.status == RunStatus::Enriching,
+            "start_ranking called from unexpected state: {:?}",
+            self.status
+        );
         self.status = RunStatus::Ranking;
     }
 

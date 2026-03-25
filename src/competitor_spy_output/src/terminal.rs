@@ -4,6 +4,7 @@
 use std::fmt::Write as FmtWrite;
 use std::io::{self, Write};
 
+use competitor_spy_domain::enrichment::COVERAGE_THRESHOLD;
 use competitor_spy_domain::run::{AdapterResultStatus, SearchRun};
 
 // ── Card separator ────────────────────────────────────────────────────────────
@@ -97,6 +98,37 @@ pub fn format_run(run: &SearchRun, detail: bool) -> String {
                     .unwrap();
                 }
             }
+            // ── V3 website enrichment fields ────────────────────────────────
+            let enrich = run.enrichments.iter().find(|e| e.competitor_id == c.id);
+            if let Some(e) = enrich {
+                if e.fetch_status.is_success() {
+                    if let Some(v) = &e.pricing {
+                        writeln!(buf, "{}", label_value("Pricing", v)).unwrap();
+                    }
+                    if let Some(types) = &e.lesson_types {
+                        writeln!(buf, "{}", label_value("Lesson Types", &types.join(", "))).unwrap();
+                    }
+                    if let Some(v) = &e.schedule {
+                        writeln!(buf, "{}", label_value("Schedule", v)).unwrap();
+                    }
+                    if let Some(items) = &e.testimonials {
+                        writeln!(buf, "{}", label_value("Testimonials", &format!("{} found", items.len()))).unwrap();
+                        if detail {
+                            for (i, t) in items.iter().enumerate() {
+                                writeln!(buf, "  [{}] \"{}\"", i + 1, t).unwrap();
+                            }
+                        }
+                    }
+                    if let Some(items) = &e.class_descriptions {
+                        writeln!(buf, "{}", label_value("Class Descs", &format!("{} found", items.len()))).unwrap();
+                        if detail {
+                            for (i, d) in items.iter().enumerate() {
+                                writeln!(buf, "  [{}] {}", i + 1, d).unwrap();
+                            }
+                        }
+                    }
+                }
+            }
         }
         writeln!(buf, "{CARD_SEP}").unwrap();
     }
@@ -117,6 +149,21 @@ pub fn format_run(run: &SearchRun, detail: bool) -> String {
                 _ => String::new(),
             };
             writeln!(buf, "  - {} : {reason}", sr.adapter_id).unwrap();
+        }
+    }
+
+    // ── Footer: V3 enrichment coverage ───────────────────────────────────────
+    if !run.enrichments.is_empty() {
+        writeln!(buf).unwrap();
+        let n = run.enrichments.len();
+        let with_data = (run.enrichment_coverage * n as f64).round() as usize;
+        writeln!(
+            buf,
+            "Enrichment:  {with_data}/{n} studios ({:.0}%) had at least one extractable field.",
+            run.enrichment_coverage * 100.0,
+        ).unwrap();
+        if run.enrichment_coverage < COVERAGE_THRESHOLD {
+            writeln!(buf, "  Warning: enrichment coverage is below the 60% threshold.").unwrap();
         }
     }
 

@@ -11,3 +11,7 @@ pub mod nominatim;
 pub mod osm_overpass;
 pub mod yelp;
 pub mod google_places;
+
+// V3: website enrichment pipeline
+pub mod extractors;
+pub mod web_enricher;

@@ -1,4 +1,10 @@
-# Getting Started — Competitor Spy v1.0
+# Developer Guide — Competitor Spy
+
+> **For users:** see [README.md](../README.md) for usage and [docs/ADMIN_GUIDE.md](../docs/ADMIN_GUIDE.md) for configuration.  
+> This document covers building from source and is targeted at developers and contributors.  
+> The canonical developer guide is [docs/DEVELOPER_GUIDE.md](../docs/DEVELOPER_GUIDE.md).
+
+---
 
 Competitor Spy is a local OSINT competitor-intelligence CLI tool written in Rust. It geocodes a location, queries public business data sources, normalises and ranks results, and outputs a terminal table and a PDF report.
 

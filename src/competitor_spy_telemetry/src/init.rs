@@ -6,10 +6,63 @@
 // `TelemetryGuard` must be kept alive for the duration of the program;
 // dropping it flushes and shuts down the OTel pipeline.
 
+use std::io;
+
 use opentelemetry_sdk::trace::TracerProvider;
 use thiserror::Error;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{fmt::MakeWriter, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use uuid::Uuid;
+
+// ── SEC-001: Pre-emit redacting writer ───────────────────────────────────────
+
+/// A [`MakeWriter`] adapter that pipes every log string through [`redact()`]
+/// before forwarding to the inner writer.
+///
+/// Produced by [`init_telemetry`] and available for tests that need to
+/// construct an isolated subscriber with the same redaction guarantee.
+///
+/// [`redact()`]: crate::redact::redact
+pub struct RedactingWriter<M>(M);
+
+impl<M> RedactingWriter<M> {
+    pub fn new(inner: M) -> Self {
+        Self(inner)
+    }
+}
+
+/// Per-event writer returned by [`RedactingWriter::make_writer`].
+pub struct RedactingWriterInstance<W>(W);
+
+impl<W: io::Write> io::Write for RedactingWriterInstance<W> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        match std::str::from_utf8(buf) {
+            Ok(s) => {
+                let redacted = crate::redact::redact(s);
+                self.0.write_all(redacted.as_bytes())?;
+                // Report the original buffer length so the caller's accounting
+                // stays correct even though we may have written more or fewer
+                // bytes (redaction can change string length).
+                Ok(buf.len())
+            }
+            Err(_) => {
+                // Non-UTF-8 bytes cannot contain text-pattern secrets.
+                self.0.write(buf)
+            }
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.0.flush()
+    }
+}
+
+impl<'a, M: MakeWriter<'a>> MakeWriter<'a> for RedactingWriter<M> {
+    type Writer = RedactingWriterInstance<M::Writer>;
+
+    fn make_writer(&'a self) -> Self::Writer {
+        RedactingWriterInstance(self.0.make_writer())
+    }
+}
 
 /// Errors that can occur during telemetry initialisation.
 #[derive(Debug, Error)]
@@ -70,10 +123,11 @@ pub fn init_telemetry(log_level: &str) -> Result<TelemetryGuard, InitError> {
     let filter = EnvFilter::try_new(log_level)
         .unwrap_or_else(|_| EnvFilter::new("info"));
 
-    // Install the subscriber: stderr compact layer + OTel layer.
+    // Install the subscriber: stderr compact layer (via RedactingWriter) + OTel layer.
+    // SEC-001: RedactingWriter ensures no secret value reaches the log sink.
     tracing_subscriber::registry()
         .with(filter)
-        .with(tracing_subscriber::fmt::layer().with_writer(std::io::stderr))
+        .with(tracing_subscriber::fmt::layer().with_writer(RedactingWriter::new(std::io::stderr)))
         .with(otel_layer)
         .try_init()?;
 

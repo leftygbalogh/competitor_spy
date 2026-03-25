@@ -6,3 +6,7 @@
 
 pub mod init;
 pub mod redact;
+
+// SEC-001: re-export so tests and downstream crates can assert on the full
+// wiring without depending on the internal module path.
+pub use init::RedactingWriter;

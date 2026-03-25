@@ -1,90 +1,95 @@
-# AI Governance Template
+# Competitor Spy
 
-This folder defines AI interaction rules, stage gates, team model, and project artifacts.
+A local OSINT competitor-intelligence CLI tool. Give it an industry and a location; it queries public business data sources, enriches results by scraping competitor websites, and produces a terminal report and a PDF.
 
-## Baseline Status
+## Quick Start
 
-- Baseline version: 1.0
-- Baseline state: Approved
-- Approved on: 2026-03-19
+```bash
+# set your credential passphrase (required when API keys are stored)
+export CSPY_CREDENTIAL_PASSPHRASE="your-passphrase"   # Linux / Git Bash
+$env:CSPY_CREDENTIAL_PASSPHRASE = "your-passphrase"   # PowerShell
 
-## Discovery Order
+# run a search
+./competitor-spy --industry "yoga studio" --location "Vienna, Austria" --radius 10
+```
 
-Read and apply files in this order:
+A PDF is written to `reports/` inside the project folder. Terminal output is printed immediately.
 
-1. `GOVERNANCE_MODE.md`
-2. `00_INTERACTION_GUARDRAILS.md`
-3. `01_DECISION_POLICY.md`
-4. `02_WORKFLOW_STAGES.md`
-5. `03_TEAM_MODEL_HANDOFFS.md`
-6. `04_PERSONA_DIRECTORY.md`
-7. `05_IDLE_AUTOMATION.md`
-8. `06_COMMAND_CHAIN_AND_PERSONALITY.md`
-9. `07_QUALITY_DIMENSIONS.md`
-10. `templates/PROJECT_BRIEF_TEMPLATE.md`
-11. `templates/FORMAL_SPEC_TEMPLATE.md`
-12. `templates/TASK_LIST_TEMPLATE.md`
-13. `templates/IMPLEMENTATION_CHRONICLE_TEMPLATE.md`
-14. `templates/PAIR_PROGRAMMING_LOG_TEMPLATE.md`
-15. `.github/copilot-instructions.md`
-16. `REQUIREMENTS_SPEC_MANIFEST.md`
-17. `DELIVERABLES_MANIFEST.md`
+---
 
-## Non-Negotiable Operating Rules
+## Usage
 
-- Clarify ambiguity through questions, one at a time, up to 12 questions per clarification cycle.
-- Do not proceed to the next stage until the current stage is complete and approved.
-- After each approved stage completion, save and create a clear stage-completion commit before starting next-stage work.
-- Prefer smaller, behavior-scoped commits to keep rollback points frequent.
-- Do not write code unless explicitly instructed to do so.
-- Record every user prompt in `prompts.md`.
-- Maintain `memory.md` with current status, decisions, blockers, and next step.
-- Linux compliance baseline applies to all template artifacts:
-  - Text files must use LF line endings.
-  - Path examples should use POSIX-style `/` separators by default.
-  - Shell examples should be Linux-compatible unless a Windows-specific path is explicitly required.
-- For new projects based on this template:
-  - Initialize a git repository.
-  - Copy this folder as project-specific governance folder.
-  - Use that copied project-specific governance folder as the active working governance directory for the project.
-  - Run a guided Q&A to customize all required documents.
+```
+competitor-spy --industry <TEXT> --location <TEXT> --radius <KM> [OPTIONS]
+```
 
-## Usage in New Projects
+### Required flags
 
-1. Copy this folder into the new project.
-2. Rename it to project-specific governance folder name.
-3. Initialize git if not already initialized.
-4. Complete Q&A customization in this order:
-  - Read `GOVERNANCE_MODE.md` first and confirm whether this repo is in Template Development mode or Project mode
-  - First question: determine project mode (Greenfield or Brownfield) before any domain-specific questions
-   - Project brief
-   - Formal specification
-   - Task list
-  - Implementation chronicle template usage rules
-   - Agent/persona additions
-5. Re-run the same discovery and stage-gated workflow in the new project context; do not skip stages because this template already exists.
+| Flag | Description |
+|---|---|
+| `--industry` | Business type to search for (e.g. `"pilates studio"`) |
+| `--location` | Location string, geocoded via Nominatim (e.g. `"St Pölten, Austria"`) |
+| `--radius` | Search radius in km — must be one of: `5`, `10`, `20`, `25`, `50` |
 
-## Living Template Model
+### Optional flags
 
-- This folder is the master template.
-- Each new project should copy this template into its own project-specific governance folder.
-- Improvements discovered in project-local governance should be fed back into the master template when approved.
-- Subsequent projects should start from the improved master template.
-- Use simple manual versioning and short changelog updates as the master template evolves.
-- This creates a repeatable loop: template -> project discovery/spec/planning -> improvements -> template.
+| Flag | Default | Description |
+|---|---|---|
+| `--output-dir` | `reports/` in project root | Directory to write the PDF |
+| `--no-pdf` | off | Skip PDF, terminal output only |
+| `--detail` | on | Show enrichment fields (pricing, lesson types, schedule, etc.) |
+| `--no-enrichment` | off | Skip website scraping entirely |
+| `--enrichment-timeout` | `15` | HTTP timeout in seconds for website enrichment requests |
+| `--allow-insecure-tls` | off | Accept invalid TLS certificates when fetching competitor sites |
+| `--log-level` | `info` | Verbosity: `trace`, `debug`, `info`, `warn`, `error` |
+| `--pacing-seed` | random | Deterministic request pacing seed (useful for testing) |
 
-## Notes on Automation
+### Subcommand: credentials
 
-Idle-time actions (save/update/commit after inactivity) are policy requirements. They should be enforced with editor hooks or automation scripts in each project environment.
+Manage encrypted API keys for Yelp and Google Places.  
+`CSPY_CREDENTIAL_PASSPHRASE` must be set before running any credentials command.
 
-## Release Readiness Artifacts
+```bash
+competitor-spy credentials set yelp           # store API key (prompted, no echo)
+competitor-spy credentials set google_places  # store API key
+competitor-spy credentials list               # show which keys are set
+competitor-spy credentials delete yelp        # remove a key
+```
 
-- Release checklist: `RELEASE_CHECKLIST.md`
-- Operational notes and rollback: `OPERATIONS_AND_ROLLBACK.md`
-- Post-release monitoring plan: `POST_RELEASE_MONITORING.md`
-- Failure runbook: `RUNBOOK_KNOWN_FAILURES.md`
-- Getting-started guide: `GETTING_STARTED.md`
-- Changelog: `CHANGELOG.md`
-- Requirements/spec index: `REQUIREMENTS_SPEC_MANIFEST.md`
-- Deliverables set baseline: `DELIVERABLES_MANIFEST.md`
-- Pair-programming evidence log (when pair/subagent collaboration is used): `docs/evidence/pair-programming-log.md`
+---
+
+## PDF output
+
+PDFs are saved to `reports/` in the project directory by default. You can override with `--output-dir`.
+
+Filename format: `{industry}_{location}_{radius}km_{YYYYMMDD}_{HHMM}.pdf`  
+Example: `pilates_stpoelten_10km_20260325_0941.pdf`
+
+---
+
+## Data sources
+
+| Source | Credentials required |
+|---|---|
+| OpenStreetMap / Overpass | None |
+| Nominatim (geocoding + search) | None |
+| Yelp Fusion | Yes — `yelp` API key |
+| Google Places | Yes — `google_places` API key |
+
+Results from all available sources are merged, deduplicated, and ranked by distance. Sources without credentials are skipped silently. Source failures are listed in the report footer and are non-fatal (exit code 0).
+
+---
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success — even if individual sources failed |
+| `1` | Fatal error — bad arguments, geocoding failure |
+
+---
+
+## Further reading
+
+- [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) — building from source, running tests
+- [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md) — environment variables, credential store, adapter config, troubleshooting

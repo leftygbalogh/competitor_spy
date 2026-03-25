@@ -123,6 +123,10 @@ async fn as_001_valid_input_both_outputs_exit_0() {
         true,  // detail view (production default)
         all_at(&server),
         no_creds(),
+        true,  // no_enrichment — avoid live HTTP in tests
+        false, // allow_insecure_tls
+        15,    // enrichment_timeout_secs
+        None,  // pacing_seed
     )
     .await;
 
@@ -183,6 +187,10 @@ async fn as_002_one_adapter_timeout_still_exit_0() {
         true,  // detail view (production default)
         all_at(&server),
         no_creds(),
+        true,  // no_enrichment
+        false, // allow_insecure_tls
+        15,    // enrichment_timeout_secs
+        None,  // pacing_seed
     )
     .await;
 
@@ -204,6 +212,10 @@ async fn as_003_invalid_radius_exit_1() {
         true,  // detail view (production default)
         AdapterUrls::production(), // doesn't matter — never reached
         no_creds(),
+        true,  // no_enrichment
+        false, // allow_insecure_tls
+        15,    // enrichment_timeout_secs
+        None,  // pacing_seed
     )
     .await;
 
@@ -232,6 +244,10 @@ async fn as_004_geocoding_no_results_exit_1() {
         true,  // detail view (production default)
         all_at(&server),
         no_creds(),
+        true,  // no_enrichment
+        false, // allow_insecure_tls
+        15,    // enrichment_timeout_secs
+        None,  // pacing_seed
     )
     .await;
 
@@ -279,6 +295,10 @@ async fn as_005_all_adapters_fail_zero_competitors_exit_0() {
         true,  // detail view (production default)
         all_at(&server),
         no_creds(),
+        true,  // no_enrichment
+        false, // allow_insecure_tls
+        15,    // enrichment_timeout_secs
+        None,  // pacing_seed
     )
     .await;
 
@@ -359,8 +379,116 @@ async fn as2_006_detail_true_v2_fields_exit_0() {
         true,  // detail view — exercises the reviews rendering path
         all_at(&server),
         no_creds(),
+        true,  // no_enrichment
+        false, // allow_insecure_tls
+        15,    // enrichment_timeout_secs
+        None,  // pacing_seed
     )
     .await;
 
     assert_eq!(exit, 0, "expected exit 0 for full V2 mock with detail=true");
+}
+
+// ── AS-V3-001: no_enrichment=true skips enrichment phase → exit 0 ────────────
+//
+// Verifies that --no-enrichment causes run_with_urls to skip start_enriching()
+// entirely and proceed directly from Collecting → Ranking → Done.
+
+#[tokio::test]
+async fn as_v3_001_no_enrichment_flag_exits_0() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(geocode_ok_body()))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/interpreter"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(overpass_empty_body()))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/v3/businesses/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(yelp_empty_body()))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/places:searchText"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(google_empty_body()))
+        .mount(&server)
+        .await;
+
+    let exit = run_with_urls(
+        "yoga studio",
+        "Amsterdam, Netherlands",
+        10,
+        Some(temp_dir()),
+        true,  // skip PDF
+        false, // no detail
+        all_at(&server),
+        no_creds(),
+        true,  // no_enrichment = true
+        false, // allow_insecure_tls
+        15,    // enrichment_timeout_secs
+        None,  // pacing_seed
+    )
+    .await;
+
+    assert_eq!(exit, 0, "AS-V3-001: expected exit 0 with --no-enrichment");
+}
+
+// ── AS-V3-002: enrichment phase runs but produces no data for zero competitors ─
+//
+// When adapters return no competitors, the enrichment loop enrich() is called
+// on an empty slice and must return an empty Vec — expected exit 0.
+
+#[tokio::test]
+async fn as_v3_002_enrichment_with_zero_competitors_exits_0() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(geocode_ok_body()))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/interpreter"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(overpass_empty_body()))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/v3/businesses/search"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(yelp_empty_body()))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/places:searchText"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(google_empty_body()))
+        .mount(&server)
+        .await;
+
+    let exit = run_with_urls(
+        "pilates studio",
+        "Amsterdam, Netherlands",
+        10,
+        Some(temp_dir()),
+        true,  // skip PDF
+        false, // no detail
+        all_at(&server),
+        no_creds(),
+        false, // no_enrichment = false — enrichment phase IS run
+        false, // allow_insecure_tls
+        5,     // short timeout
+        Some(42), // deterministic pacing seed (zero-delay not set, but no compets → no waits)
+    )
+    .await;
+
+    assert_eq!(exit, 0, "AS-V3-002: expected exit 0 with enrichment on empty competitor list");
 }
